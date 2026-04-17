@@ -173,6 +173,174 @@ label_settings = SubResource("LabelSettings_6g56m")
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Level06" type="TextureButton" parent="GridContainer" unique_id=705716050]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level06" unique_id=1272928356]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "6"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level07" type="TextureButton" parent="GridContainer" unique_id=1473813855]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level07" unique_id=1945641274]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "7"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level08" type="TextureButton" parent="GridContainer" unique_id=333388248]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level08" unique_id=1520572682]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "8"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level09" type="TextureButton" parent="GridContainer" unique_id=1647488427]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level09" unique_id=1319900834]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "9"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level10" type="TextureButton" parent="GridContainer" unique_id=1491968360]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level10" unique_id=1826793471]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "10"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level11" type="TextureButton" parent="GridContainer" unique_id=745911360]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level11" unique_id=904886074]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "11"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level12" type="TextureButton" parent="GridContainer" unique_id=162609575]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level12" unique_id=164852840]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "12"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level13" type="TextureButton" parent="GridContainer" unique_id=1053675208]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level13" unique_id=1057981096]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "13"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="FadeRect" type="ColorRect" parent="." unique_id=684544004]
 layout_mode = 1
 anchors_preset = 15

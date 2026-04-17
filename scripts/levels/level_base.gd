@@ -13,6 +13,7 @@ const TEX_PUZZLE_IN4 := preload("res://assets/puzzle/puzzle_in4.png")
 const TEX_PUZZLE_CLOSE := preload("res://assets/puzzle/puzzle_close_part.png")
 const TEX_PUZZLE_OUT := preload("res://assets/puzzle/puzzle_out_part.png")
 const DOOR_SCENE := preload("res://scenes/door.tscn")
+const LEVEL_PROGRESS := preload("res://scripts/level_progress.gd")
 
 const WELCOME_SCENE := "res://scenes/welcome.tscn"
 const LEVELS_SCENE := "res://scenes/levels.tscn"
@@ -153,6 +154,7 @@ func _apply_level_config() -> void:
 
 func _ready() -> void:
 	_apply_level_config()
+	level_number = _resolved_level_number()
 	if Engine.is_editor_hint():
 		queue_redraw()
 		return
@@ -728,9 +730,11 @@ func _setup_level_ui() -> void:
 	if retry_button != null:
 		retry_button.pressed.connect(_on_retry_button_pressed)
 
-	var exit_button: TextureButton = _modal_pause.get_node_or_null("ExitButton") as TextureButton
-	if exit_button != null:
-		exit_button.pressed.connect(_on_exit_button_pressed)
+	var levels_button: TextureButton = _modal_pause.get_node_or_null("LevelsButton") as TextureButton
+	if levels_button == null:
+		levels_button = _modal_pause.get_node_or_null("ExitButton") as TextureButton
+	if levels_button != null:
+		levels_button.pressed.connect(_on_pause_levels_button_pressed)
 
 	_setup_win_modal()
 
@@ -804,6 +808,14 @@ func _on_retry_button_pressed() -> void:
 	get_tree().reload_current_scene()
 
 
+func _on_pause_levels_button_pressed() -> void:
+	if _pause_transition_active:
+		return
+
+	_set_pause_state(false)
+	get_tree().change_scene_to_file(LEVELS_SCENE)
+
+
 func _on_exit_button_pressed() -> void:
 	if _pause_transition_active:
 		return
@@ -837,7 +849,7 @@ func _on_win_next_button_pressed() -> void:
 
 
 func _next_level_scene_path() -> String:
-	var next_level := level_number + 1
+	var next_level := _resolved_level_number() + 1
 	var lower_path := "res://scenes/levels/level%02d.tscn" % next_level
 	if ResourceLoader.exists(lower_path):
 		return lower_path
@@ -847,6 +859,36 @@ func _next_level_scene_path() -> String:
 		return upper_path
 
 	return lower_path
+
+
+func _resolved_level_number() -> int:
+	var scene := get_tree().current_scene
+	if scene != null:
+		var inferred := _extract_level_number_from_path(scene.scene_file_path)
+		if inferred > 0:
+			return inferred
+
+	return max(1, level_number)
+
+
+func _extract_level_number_from_path(path: String) -> int:
+	if path.is_empty():
+		return -1
+
+	var regex := RegEx.new()
+	var compile_status := regex.compile("(?i)level(\\d+)")
+	if compile_status != OK:
+		return -1
+
+	var found := regex.search(path)
+	if found == null:
+		return -1
+
+	var digits := found.get_string(1)
+	if not digits.is_valid_int():
+		return -1
+
+	return int(digits)
 
 
 func _show_pause_modal_animated() -> void:
@@ -1183,6 +1225,7 @@ func _start_win_sequence() -> void:
 		return
 
 	_level_complete = true
+	LEVEL_PROGRESS.complete_level(_resolved_level_number())
 	_set_pause_state(true)
 	_player_velocity = Vector2.ZERO
 	_center_player_on_door()
