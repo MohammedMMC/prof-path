@@ -1,9 +1,10 @@
 [gd_scene format=3 uid="uid://dnxcqa4axbwgq"]
 
+[ext_resource type="Texture2D" uid="uid://kiaiosg2llfi" path="res://assets/door.png" id="1_hpvv5"]
+
 [node name="Door" type="Node2D" unique_id=1560241584]
 
-[node name="Panel" type="Panel" parent="." unique_id=898686013]
-offset_left = -20.0
-offset_top = -23.0
-offset_right = 20.0
-offset_bottom = 17.0
+[node name="Door" type="Sprite2D" parent="." unique_id=1552258846]
+position = Vector2(0, 5.9604645e-08)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("1_hpvv5")
