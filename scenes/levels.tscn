@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://d02jlnvvfwwis"]
 
+[ext_resource type="Script" uid="uid://d0pvr3rpsly0i" path="res://scripts/levels.gd" id="1_byla0"]
 [ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="1_hcnff"]
 [ext_resource type="FontFile" uid="uid://dkwxckupac55q" path="res://pixel.ttf" id="2_jj4e6"]
 [ext_resource type="Texture2D" uid="uid://b6v58pxd70ubu" path="res://assets/buttons/level_box.png" id="3_byla0"]
@@ -29,6 +30,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_byla0")
 
 [node name="Background" parent="." unique_id=129210056 instance=ExtResource("1_hcnff")]
 layout_mode = 1
@@ -170,3 +172,13 @@ text = "5"
 label_settings = SubResource("LabelSettings_6g56m")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="FadeRect" type="ColorRect" parent="." unique_id=684544004]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

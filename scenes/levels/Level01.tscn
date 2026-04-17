@@ -1,8 +1,10 @@
 [gd_scene format=3 uid="uid://jh511jjcbwq7"]
 
 [ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="1_3n7h2"]
+[ext_resource type="Script" uid="uid://cidyct1vr3ry3" path="res://scenes/levels/level_01.gd" id="1_msin7"]
 
 [node name="Level01" type="Node2D" unique_id=553084612]
+script = ExtResource("1_msin7")
 
 [node name="Panel" type="Panel" parent="." unique_id=984896560]
 offset_right = 480.0
