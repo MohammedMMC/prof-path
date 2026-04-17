@@ -544,7 +544,11 @@ func _door_visual_rect_from_instance(instance: Node) -> Rect2:
 
 
 func _setup_level_ui() -> void:
-	level_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Let gameplay input pass through the top bar except actual clickable buttons.
+	level_bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	timer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	level_label.text = "Level %d" % level_number
 	pause_button.pressed.connect(_on_pause_button_pressed)
 

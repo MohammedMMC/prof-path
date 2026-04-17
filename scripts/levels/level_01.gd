@@ -14,21 +14,21 @@ func _apply_level_config() -> void:
 			"role": BLOCK_ROLE_START,
 			"sides": [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_CLOSED],
 			"draggable": false,
-			"cell": Vector2i(2, 2),
+			"cell": Vector2i(3, 3),
 		},
 		{
 			"name": "EndPiece",
 			"role": BLOCK_ROLE_END,
 			"sides": [SIDE_CLOSED, SIDE_CLOSED, SIDE_CLOSED, SIDE_IN],
 			"draggable": false,
-			"cell": Vector2i(4, 2),
+			"cell": Vector2i(5, 3),
 		},
 		{
 			"name": "Connector01",
 			"role": BLOCK_ROLE_NORMAL,
 			"sides": [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_IN],
 			"draggable": true,
-			"spawn_cell": Vector2i(0, 0),
+			"spawn_cell": Vector2i(6, 2),
 			# Optional style override per block:
 			# "style": {
 			# 	"base_texture": TEX_PUZZLE_IN4,
