@@ -1,3 +1,4 @@
+@tool
 extends Node2D
 
 
@@ -73,6 +74,7 @@ const DOOR_LOCAL_RECT_SIZE := Vector2(40.0, 40.0)
 @onready var timer_label: Label = $LevelBar/LevelLabel/TimerLabel
 @onready var scene_modal_pause: Control = get_node_or_null("ModalPause") as Control
 @onready var scene_modal_win: Control = get_node_or_null("ModalWin") as Control
+@onready var block_wall_maps_root: Node = get_node_or_null("BlockWallMaps")
 
 var level_number := 1
 var start_cell := Vector2i(2, 2)
@@ -90,6 +92,7 @@ var connector_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_IN]
 # - spawn_cell: Vector2i (board-grid position without occupying a board slot)
 # - tray_cell: Vector2i (free/tray grid location relative to connector_spawn_position)
 # - position: Vector2 (optional raw world-grid position for free/tray blocks)
+# - wall_map: String (TileMap/TileMapLayer node name; painted cells become player walls)
 # - style: { base_texture, out_texture, close_texture }
 var level_blocks: Array = []
 # Fallback anchor (used when door sprite bounds are not detectable).
@@ -97,6 +100,7 @@ var door_piece_local_position := Vector2(30.0, 33.0)
 var door_snap_to_ground_right := true
 var door_padding_right := 2.0
 var door_padding_bottom := 1.0
+var use_scene_level_pieces := true
 
 var _base_piece_size := 50.0
 var _piece_scale := 1.0
@@ -104,6 +108,7 @@ var _piece_scale := 1.0
 var _board_slots: Array = []
 var _draggable_pieces: Array[Node2D] = []
 var _piece_data := {}
+var _piece_wall_maps := {}
 
 var _start_piece: Node2D = null
 var _end_piece: Node2D = null
@@ -147,6 +152,9 @@ func _apply_level_config() -> void:
 
 func _ready() -> void:
 	_apply_level_config()
+	if Engine.is_editor_hint():
+		queue_redraw()
+		return
 
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if $Panel/Background is Control:
@@ -165,12 +173,17 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if _is_paused:
 		return
 	_update_player(delta)
 
 
 func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		queue_redraw()
+		return
 	if _is_paused or _level_complete:
 		return
 
@@ -180,6 +193,8 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	if _grid_root == null:
+		if Engine.is_editor_hint():
+			_draw_editor_grid()
 		return
 
 	var grid_scale := _grid_root.scale.x
@@ -202,7 +217,27 @@ func _draw() -> void:
 	draw_rect(Rect2(_grid_to_world(connector_spawn_position), Vector2.ONE * CELL_SIZE * grid_scale), Color(0.0, 0.0, 0.0, 0.3), false, maxf(1.0, 2.0 * grid_scale))
 
 
+func _draw_editor_grid() -> void:
+	var board_origin := BOARD_ORIGIN
+	var board_size := Vector2(float(GRID_COLS) * CELL_SIZE, float(GRID_ROWS) * CELL_SIZE)
+	draw_rect(Rect2(board_origin, board_size), Color(0.0, 0.0, 0.0, 0.08), true)
+	draw_rect(Rect2(_board_cell_to_position(start_cell), Vector2.ONE * CELL_SIZE), Color(0.2, 0.75, 0.35, 0.16), true)
+	draw_rect(Rect2(_board_cell_to_position(end_cell), Vector2.ONE * CELL_SIZE), Color(0.85, 0.2, 0.2, 0.16), true)
+
+	for row in range(GRID_ROWS + 1):
+		var y := board_origin.y + float(row) * CELL_SIZE
+		draw_line(Vector2(board_origin.x, y), Vector2(board_origin.x + board_size.x, y), Color(0.0, 0.0, 0.0, 0.45), 1.0)
+
+	for col in range(GRID_COLS + 1):
+		var x := board_origin.x + float(col) * CELL_SIZE
+		draw_line(Vector2(x, board_origin.y), Vector2(x, board_origin.y + board_size.y), Color(0.0, 0.0, 0.0, 0.45), 1.0)
+
+	draw_rect(Rect2(connector_spawn_position, Vector2.ONE * CELL_SIZE), Color(0.0, 0.0, 0.0, 0.3), false, 1.0)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if Engine.is_editor_hint():
+		return
 	if _is_paused:
 		return
 
@@ -284,12 +319,17 @@ func _init_board_slots() -> void:
 
 func _build_level_layout() -> void:
 	_piece_data.clear()
+	_piece_wall_maps.clear()
 	_draggable_pieces.clear()
 	_start_piece = null
 	_end_piece = null
 	_connector_piece = null
 
-	var blocks: Array = level_blocks
+	var blocks: Array = []
+	if use_scene_level_pieces:
+		blocks = _scene_level_blocks()
+	if blocks.is_empty():
+		blocks = level_blocks
 	if blocks.is_empty():
 		blocks = _default_level_blocks()
 
@@ -310,7 +350,7 @@ func _build_level_layout() -> void:
 		var style_variant: Variant = block.get("style", {})
 		var style: Dictionary = style_variant if style_variant is Dictionary else {}
 
-		var piece := _create_piece(piece_name, sides, draggable, style)
+		var piece := _create_piece(piece_name, sides, draggable, style, block)
 		var role := str(block.get("role", BLOCK_ROLE_NORMAL)).to_lower()
 
 		if role == BLOCK_ROLE_START:
@@ -340,6 +380,29 @@ func _build_level_layout() -> void:
 
 	if _end_piece != null:
 		_setup_end_door()
+
+
+func _scene_level_blocks() -> Array:
+	var result: Array = []
+	var level_pieces_root := get_node_or_null("LevelPieces")
+	if level_pieces_root == null:
+		return result
+
+	for child in level_pieces_root.get_children():
+		if not (child is Node):
+			continue
+		var node := child as Node
+		if not node.has_method("to_block_dict"):
+			continue
+		var block_value: Variant = node.call("to_block_dict")
+		if block_value is Dictionary:
+			var block: Dictionary = block_value
+			var wall_map_name := str(block.get("wall_map", "")).strip_edges()
+			if wall_map_name.is_empty() and node.has_node("WallMap"):
+				block["wall_map"] = node.name
+			result.append(block)
+
+	return result
 
 
 func _default_level_blocks() -> Array:
@@ -416,7 +479,7 @@ func _first_draggable_piece() -> Node2D:
 	return null
 
 
-func _create_piece(piece_name: String, sides: Array, draggable: bool, style: Dictionary = {}) -> Node2D:
+func _create_piece(piece_name: String, sides: Array, draggable: bool, style: Dictionary = {}, block: Dictionary = {}) -> Node2D:
 	var piece := Node2D.new()
 	piece.name = piece_name
 	piece.scale = Vector2.ONE * _piece_scale
@@ -432,6 +495,7 @@ func _create_piece(piece_name: String, sides: Array, draggable: bool, style: Dic
 	_add_side_overlay_if_needed(piece, sides[SIDE_RIGHT], SIDE_RIGHT, style)
 	_add_side_overlay_if_needed(piece, sides[SIDE_BOTTOM], SIDE_BOTTOM, style)
 	_add_side_overlay_if_needed(piece, sides[SIDE_LEFT], SIDE_LEFT, style)
+	_attach_piece_wall_tilemap(piece, piece_name, block)
 
 	_grid_root.add_child(piece)
 	if draggable:
@@ -471,6 +535,88 @@ func _texture_from_style(style: Dictionary, key: String, fallback: Texture2D) ->
 	if texture_value is Texture2D:
 		return texture_value as Texture2D
 	return fallback
+
+
+func _attach_piece_wall_tilemap(piece: Node2D, piece_name: String, block: Dictionary) -> void:
+	var map_name := str(block.get("wall_map", piece_name))
+	var template := _find_wall_map_template(map_name)
+	if template == null:
+		_piece_wall_maps[piece] = null
+		return
+
+	var duplicated: Node = template.duplicate()
+	if duplicated is Node2D:
+		var wall_map := duplicated as Node2D
+		wall_map.name = "WallTileMap"
+		wall_map.position = Vector2.ZERO
+		wall_map.z_index = 3
+		piece.add_child(wall_map)
+		_piece_wall_maps[piece] = wall_map
+	else:
+		_piece_wall_maps[piece] = null
+
+
+func _find_wall_map_template(map_name: String) -> Node:
+	var trimmed_name := map_name.strip_edges()
+	if trimmed_name.is_empty():
+		return null
+
+	# Preferred workflow: per-piece editable map at LevelPieces/<PieceName>/WallMap.
+	if has_node("LevelPieces/%s/WallMap" % trimmed_name):
+		var piece_wall := get_node("LevelPieces/%s/WallMap" % trimmed_name)
+		if _is_wall_map_node(piece_wall):
+			return piece_wall
+
+	# Allow explicit node paths in wall_map config.
+	if has_node(trimmed_name):
+		var by_path := get_node(trimmed_name)
+		if _is_wall_map_node(by_path):
+			return by_path
+
+	if block_wall_maps_root != null:
+		if block_wall_maps_root.has_node(trimmed_name):
+			var direct := block_wall_maps_root.get_node(trimmed_name)
+			if _is_wall_map_node(direct):
+				return direct
+
+		for child in block_wall_maps_root.get_children():
+			if child is Node and (child as Node).name == trimmed_name and _is_wall_map_node(child as Node):
+				return child as Node
+
+	# Fallback: allow map nodes anywhere in the level scene.
+	var any_match := find_child(trimmed_name, true, false)
+	if any_match is Node and _is_wall_map_node(any_match as Node):
+		return any_match as Node
+
+	return null
+
+
+func _is_wall_map_node(node: Node) -> bool:
+	return node != null and node.has_method("get_used_cells")
+
+
+func _wall_map_used_cells(wall_map: Node) -> Array:
+	if wall_map == null:
+		return []
+
+	if wall_map is TileMap:
+		var merged: Array = []
+		var tile_map := wall_map as TileMap
+		var layer_count := 1
+		if tile_map.has_method("get_layers_count"):
+			layer_count = max(1, int(tile_map.call("get_layers_count")))
+
+		for layer in range(layer_count):
+			var used_layer: Variant = tile_map.call("get_used_cells", layer)
+			if used_layer is Array:
+				merged.append_array(used_layer)
+		return merged
+
+	if wall_map.has_method("get_used_cells"):
+		var used: Variant = wall_map.call("get_used_cells")
+		if used is Array:
+			return used as Array
+	return []
 
 
 func _rotation_for_side(side: int) -> float:
@@ -920,8 +1066,10 @@ func _update_player(delta: float) -> void:
 
 	_player_velocity.y += PLAYER_GRAVITY * delta
 
-	var new_pos := _player_root.position + _player_velocity * delta
+	var previous_pos := _player_root.position
+	var new_pos := previous_pos + _player_velocity * delta
 	new_pos = _resolve_horizontal_transition(new_pos)
+	new_pos = _resolve_piece_wall_collisions(previous_pos, new_pos)
 	var floor_y := _player_floor_root_y()
 
 	if new_pos.y >= floor_y:
@@ -934,6 +1082,54 @@ func _update_player(delta: float) -> void:
 
 	if not _level_complete and _is_player_in_door():
 		_start_win_sequence()
+
+
+func _resolve_piece_wall_collisions(previous_pos: Vector2, next_pos: Vector2) -> Vector2:
+	if _player_piece == null:
+		return next_pos
+
+	var resolved := next_pos
+	if not is_equal_approx(next_pos.x, previous_pos.x):
+		var horizontal_rect := _player_hitbox_rect(Vector2(next_pos.x, previous_pos.y))
+		if _is_piece_rect_blocked_by_walls(_player_piece, horizontal_rect):
+			resolved.x = previous_pos.x
+			_player_velocity.x = 0.0
+
+	if not is_equal_approx(next_pos.y, previous_pos.y):
+		var vertical_rect := _player_hitbox_rect(Vector2(resolved.x, next_pos.y))
+		if _is_piece_rect_blocked_by_walls(_player_piece, vertical_rect):
+			resolved.y = previous_pos.y
+			_player_velocity.y = 0.0
+
+	return resolved
+
+
+func _is_piece_rect_blocked_by_walls(piece: Node2D, rect: Rect2) -> bool:
+	var map_value: Variant = _piece_wall_maps.get(piece, null)
+	if not (map_value is Node2D):
+		return false
+
+	var wall_map := map_value as Node2D
+	var tile_size := Vector2(_base_piece_size, _base_piece_size)
+	var tile_set_value: Variant = wall_map.get("tile_set")
+	if tile_set_value is TileSet:
+		var ts := tile_set_value as TileSet
+		tile_size = Vector2(ts.tile_size)
+
+	for used_cell_value in _wall_map_used_cells(wall_map):
+		if not (used_cell_value is Vector2i):
+			continue
+		var cell := used_cell_value as Vector2i
+		var cell_origin := wall_map.position + Vector2(float(cell.x) * tile_size.x, float(cell.y) * tile_size.y)
+		if wall_map.has_method("map_to_local"):
+			var mapped_center: Variant = wall_map.call("map_to_local", cell)
+			if mapped_center is Vector2:
+				cell_origin = (mapped_center as Vector2) - (tile_size * 0.5)
+		var cell_rect := Rect2(cell_origin, tile_size)
+		if rect.intersects(cell_rect):
+			return true
+
+	return false
 
 
 func _start_win_sequence() -> void:
