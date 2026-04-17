@@ -69,6 +69,7 @@ columns = 5
 [node name="Level01" type="TextureButton" parent="GridContainer" unique_id=1803380522]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_byla0")
 texture_pressed = ExtResource("4_r44b6")
 texture_hover = ExtResource("4_r44b6")
@@ -89,6 +90,7 @@ vertical_alignment = 1
 [node name="Level02" type="TextureButton" parent="GridContainer" unique_id=728175500]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_byla0")
 texture_pressed = ExtResource("4_r44b6")
 texture_hover = ExtResource("4_r44b6")
@@ -109,6 +111,7 @@ vertical_alignment = 1
 [node name="Level03" type="TextureButton" parent="GridContainer" unique_id=1750761049]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_byla0")
 texture_pressed = ExtResource("4_r44b6")
 texture_hover = ExtResource("4_r44b6")
@@ -129,6 +132,7 @@ vertical_alignment = 1
 [node name="Level04" type="TextureButton" parent="GridContainer" unique_id=2133917993]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_byla0")
 texture_pressed = ExtResource("4_r44b6")
 texture_hover = ExtResource("4_r44b6")
@@ -149,6 +153,7 @@ vertical_alignment = 1
 [node name="Level05" type="TextureButton" parent="GridContainer" unique_id=1452027984]
 custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
+mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_byla0")
 texture_pressed = ExtResource("4_r44b6")
 texture_hover = ExtResource("4_r44b6")
