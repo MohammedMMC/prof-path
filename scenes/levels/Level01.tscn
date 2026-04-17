@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://codn36tvxa8r0" path="res://scripts/levels/level_01.gd" id="1_msin7"]
 [ext_resource type="PackedScene" uid="uid://bku7hb346q2tq" path="res://scenes/level_bar.tscn" id="3_g0jr5"]
 [ext_resource type="PackedScene" uid="uid://b1kvnrqelcjrg" path="res://scenes/modal_pause.tscn" id="4_i4uh8"]
+[ext_resource type="PackedScene" uid="uid://xelsgsbgn2mk" path="res://scenes/modal_win.tscn" id="5_qwlqn"]
 
 [node name="Level01" type="Node2D" unique_id=553084612]
 script = ExtResource("1_msin7")
@@ -20,6 +21,16 @@ offset_right = 480.0
 offset_bottom = 68.0
 
 [node name="ModalPause" parent="." unique_id=418929332 instance=ExtResource("4_i4uh8")]
+visible = false
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 480.0
+offset_bottom = 270.0
+grow_horizontal = 1
+grow_vertical = 1
+
+[node name="ModalWin" parent="." unique_id=853956185 instance=ExtResource("5_qwlqn")]
 visible = false
 anchors_preset = 0
 anchor_right = 0.0

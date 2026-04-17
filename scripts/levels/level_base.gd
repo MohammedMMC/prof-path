@@ -14,9 +14,14 @@ const TEX_PUZZLE_OUT := preload("res://assets/puzzle/puzzle_out_part.png")
 const DOOR_SCENE := preload("res://scenes/door.tscn")
 
 const WELCOME_SCENE := "res://scenes/welcome.tscn"
+const LEVELS_SCENE := "res://scenes/levels.tscn"
 const PAUSE_MODAL_ANIM_DURATION := 0.2
 const PAUSE_MODAL_SHOW_START_SCALE := 0.9
 const PAUSE_MODAL_HIDE_END_SCALE := 1.08
+const WIN_MODAL_ANIM_DURATION := 0.2
+const WIN_MODAL_SHOW_START_SCALE := 0.9
+const WIN_MODAL_HIDE_END_SCALE := 1.08
+const WIN_MODAL_SHOW_DELAY_SECONDS := 0.5
 
 const TEX_PLAYER_IDLE := preload("res://assets/player/idle.png")
 const TEX_PLAYER_WALK := preload("res://assets/player/walk.png")
@@ -52,6 +57,7 @@ const PLAYER_HITBOX_INSET_LEFT := 3.0
 const PLAYER_HITBOX_INSET_RIGHT := 3.0
 const PLAYER_HITBOX_INSET_TOP := 1.0
 const PLAYER_HITBOX_INSET_BOTTOM := 1.0
+const PLAYER_WIN_TELEPORT_Y_OFFSET := 2.0
 
 const DOOR_LOCAL_RECT_POSITION := Vector2(-20.0, -23.0)
 const DOOR_LOCAL_RECT_SIZE := Vector2(40.0, 40.0)
@@ -62,6 +68,7 @@ const DOOR_LOCAL_RECT_SIZE := Vector2(40.0, 40.0)
 @onready var pause_button: TextureButton = $LevelBar/PauseButton
 @onready var timer_label: Label = $LevelBar/LevelLabel/TimerLabel
 @onready var scene_modal_pause: Control = get_node_or_null("ModalPause") as Control
+@onready var scene_modal_win: Control = get_node_or_null("ModalWin") as Control
 
 var level_number := 1
 var start_cell := Vector2i(2, 2)
@@ -73,6 +80,8 @@ var connector_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_IN]
 # Fallback anchor (used when door sprite bounds are not detectable).
 var door_piece_local_position := Vector2(30.0, 33.0)
 var door_snap_to_ground_right := true
+var door_padding_right := 2.0
+var door_padding_bottom := 1.0
 
 var _base_piece_size := 50.0
 var _piece_scale := 1.0
@@ -109,8 +118,12 @@ var _grid_pan_last_screen_position := Vector2.ZERO
 var _elapsed_seconds := 0.0
 var _is_paused := false
 var _pause_transition_active := false
+var _win_transition_active := false
 var _modal_pause: Control = null
+var _modal_win: Control = null
 var _pause_canvas_layer: CanvasLayer = null
+var _win_second_star: CanvasItem = null
+var _win_third_star: CanvasItem = null
 
 
 func _apply_level_config() -> void:
@@ -360,8 +373,8 @@ func _setup_end_door() -> void:
 			_door_local_rect_size = sprite_rect.size
 			if door_snap_to_ground_right:
 				final_position = Vector2(
-					_base_piece_size - (sprite_rect.position.x + sprite_rect.size.x),
-					_base_piece_size - (sprite_rect.position.y + sprite_rect.size.y)
+					_base_piece_size - door_padding_right - (sprite_rect.position.x + sprite_rect.size.x),
+					_base_piece_size - door_padding_bottom - (sprite_rect.position.y + sprite_rect.size.y)
 				)
 
 		_door_instance = instance as Node2D
@@ -407,7 +420,7 @@ func _setup_level_ui() -> void:
 		_modal_pause.reparent(_pause_canvas_layer)
 
 	_modal_pause.z_as_relative = false
-	_modal_pause.z_index = 10_000
+	_modal_pause.z_index = 100
 	_modal_pause.visible = false
 	_modal_pause.modulate = Color(1, 1, 1, 0)
 	_modal_pause.scale = Vector2.ONE * PAUSE_MODAL_SHOW_START_SCALE
@@ -425,6 +438,40 @@ func _setup_level_ui() -> void:
 	var exit_button: TextureButton = _modal_pause.get_node_or_null("ExitButton") as TextureButton
 	if exit_button != null:
 		exit_button.pressed.connect(_on_exit_button_pressed)
+
+	_setup_win_modal()
+
+
+func _setup_win_modal() -> void:
+	_modal_win = scene_modal_win
+	if _modal_win == null:
+		return
+
+	if _modal_win.get_parent() != _pause_canvas_layer:
+		_modal_win.reparent(_pause_canvas_layer)
+
+	_modal_win.z_as_relative = false
+	_modal_win.z_index = 101
+	_modal_win.visible = false
+	_modal_win.modulate = Color(1, 1, 1, 0)
+	_modal_win.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+	_modal_win.pivot_offset = _modal_win.size * 0.5
+	_modal_win.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var levels_button: TextureButton = _modal_win.get_node_or_null("TextureRect/LevelsButton") as TextureButton
+	if levels_button != null:
+		levels_button.pressed.connect(_on_win_levels_button_pressed)
+
+	var next_button: TextureButton = _modal_win.get_node_or_null("TextureRect/NextButton") as TextureButton
+	if next_button != null:
+		next_button.pressed.connect(_on_win_next_button_pressed)
+
+	_win_second_star = _modal_win.get_node_or_null("TextureRect/2ndStar") as CanvasItem
+	_win_third_star = _modal_win.get_node_or_null("TextureRect/3rdStar") as CanvasItem
+	if _win_second_star != null:
+		_win_second_star.visible = false
+	if _win_third_star != null:
+		_win_third_star.visible = false
 
 
 func _update_timer_label() -> void:
@@ -472,6 +519,43 @@ func _on_exit_button_pressed() -> void:
 	get_tree().change_scene_to_file(WELCOME_SCENE)
 
 
+func _on_win_levels_button_pressed() -> void:
+	if _win_transition_active:
+		return
+
+	_hide_win_modal_animated(func() -> void:
+		_set_pause_state(false)
+		get_tree().change_scene_to_file(LEVELS_SCENE)
+	)
+
+
+func _on_win_next_button_pressed() -> void:
+	if _win_transition_active:
+		return
+
+	var next_scene_path := _next_level_scene_path()
+	_hide_win_modal_animated(func() -> void:
+		_set_pause_state(false)
+		if ResourceLoader.exists(next_scene_path):
+			get_tree().change_scene_to_file(next_scene_path)
+		else:
+			get_tree().change_scene_to_file(LEVELS_SCENE)
+	)
+
+
+func _next_level_scene_path() -> String:
+	var next_level := level_number + 1
+	var lower_path := "res://scenes/levels/level%02d.tscn" % next_level
+	if ResourceLoader.exists(lower_path):
+		return lower_path
+
+	var upper_path := "res://scenes/levels/Level%02d.tscn" % next_level
+	if ResourceLoader.exists(upper_path):
+		return upper_path
+
+	return lower_path
+
+
 func _show_pause_modal_animated() -> void:
 	if _modal_pause == null:
 		return
@@ -505,6 +589,44 @@ func _hide_pause_modal_animated(after_hide: Callable = Callable()) -> void:
 		_modal_pause.visible = false
 		_modal_pause.scale = Vector2.ONE * PAUSE_MODAL_SHOW_START_SCALE
 		_pause_transition_active = false
+		if after_hide.is_valid():
+			after_hide.call()
+	)
+
+
+func _show_win_modal_animated() -> void:
+	if _modal_win == null:
+		return
+
+	_win_transition_active = true
+	_modal_win.visible = true
+	_modal_win.move_to_front()
+	_modal_win.modulate = Color(1, 1, 1, 0)
+	_modal_win.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+	_modal_win.pivot_offset = _modal_win.size * 0.5
+
+	var tween := create_tween()
+	tween.tween_property(_modal_win, "modulate:a", 1.0, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_modal_win, "scale", Vector2.ONE, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		_win_transition_active = false
+	)
+
+
+func _hide_win_modal_animated(after_hide: Callable = Callable()) -> void:
+	if _modal_win == null:
+		if after_hide.is_valid():
+			after_hide.call()
+		return
+
+	_win_transition_active = true
+	var tween := create_tween()
+	tween.tween_property(_modal_win, "modulate:a", 0.0, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(_modal_win, "scale", Vector2.ONE * WIN_MODAL_HIDE_END_SCALE, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		_modal_win.visible = false
+		_modal_win.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+		_win_transition_active = false
 		if after_hide.is_valid():
 			after_hide.call()
 	)
@@ -665,8 +787,63 @@ func _update_player(delta: float) -> void:
 	_update_player_animation(direction, wants_run)
 
 	if not _level_complete and _is_player_in_door():
-		_level_complete = true
-		print("Level %d complete" % level_number)
+		_start_win_sequence()
+
+
+func _start_win_sequence() -> void:
+	if _level_complete:
+		return
+
+	_level_complete = true
+	_set_pause_state(true)
+	_player_velocity = Vector2.ZERO
+	_center_player_on_door()
+	if _player_sprite != null:
+		_player_sprite.play("idle")
+
+	if _modal_pause != null and _modal_pause.visible:
+		_modal_pause.visible = false
+
+	await get_tree().create_timer(WIN_MODAL_SHOW_DELAY_SECONDS).timeout
+	_apply_win_stars_from_time()
+	_show_win_modal_animated()
+	print("Level %d complete" % level_number)
+
+
+func _center_player_on_door() -> void:
+	if _door_instance == null or _player_root == null:
+		return
+
+	var door_center := _door_instance.position + _door_local_rect_position + (_door_local_rect_size * 0.5)
+	var visual := _player_visual_size()
+	var centered_position := door_center - (visual * 0.5)
+	centered_position.y += PLAYER_WIN_TELEPORT_Y_OFFSET
+	centered_position.x = clampf(centered_position.x, _player_min_x(), _player_max_x())
+	centered_position.y = clampf(centered_position.y, -_base_piece_size, _player_floor_root_y())
+	_player_root.position = centered_position
+
+
+func _apply_win_stars_from_time() -> void:
+	var show_second := false
+	var show_third := false
+
+	if _elapsed_seconds < 60.0:
+		show_second = true
+		show_third = true
+	elif _elapsed_seconds >= 180.0:
+		show_second = false
+		show_third = false
+	elif _elapsed_seconds > 120.0:
+		show_second = true
+		show_third = false
+	else:
+		show_second = true
+		show_third = true
+
+	if _win_second_star != null:
+		_win_second_star.visible = show_second
+	if _win_third_star != null:
+		_win_third_star.visible = show_third
 
 
 func _resolve_horizontal_transition(new_pos: Vector2) -> Vector2:
