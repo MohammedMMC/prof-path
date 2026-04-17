@@ -38,6 +38,10 @@ const SIDE_IN := 0
 const SIDE_OUT := 1
 const SIDE_CLOSED := 2
 
+const BLOCK_ROLE_START := "start"
+const BLOCK_ROLE_END := "end"
+const BLOCK_ROLE_NORMAL := "normal"
+
 const POINTER_NONE := -999
 const POINTER_MOUSE := -1
 const POINTER_GRID_MOUSE := -2
@@ -77,6 +81,17 @@ var connector_spawn_position := TRAY_ORIGIN
 var start_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_CLOSED]
 var end_piece_sides: Array = [SIDE_CLOSED, SIDE_CLOSED, SIDE_CLOSED, SIDE_IN]
 var connector_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_IN]
+# Easy per-level layout config. Each entry can define:
+# - name: String
+# - role: start/end/normal
+# - sides: [top, right, bottom, left] using SIDE_* constants
+# - draggable: bool
+# - cell: Vector2i (board location)
+# - spawn_cell: Vector2i (board-grid position without occupying a board slot)
+# - tray_cell: Vector2i (free/tray grid location relative to connector_spawn_position)
+# - position: Vector2 (optional raw world-grid position for free/tray blocks)
+# - style: { base_texture, out_texture, close_texture }
+var level_blocks: Array = []
 # Fallback anchor (used when door sprite bounds are not detectable).
 var door_piece_local_position := Vector2(30.0, 33.0)
 var door_snap_to_ground_right := true
@@ -268,39 +283,155 @@ func _init_board_slots() -> void:
 
 
 func _build_level_layout() -> void:
-	var start_sides: Array = start_piece_sides.duplicate()
-	var end_sides: Array = end_piece_sides.duplicate()
-	var connector_sides: Array = connector_piece_sides.duplicate()
+	_piece_data.clear()
+	_draggable_pieces.clear()
+	_start_piece = null
+	_end_piece = null
+	_connector_piece = null
 
-	_start_piece = _create_piece("StartPiece", start_sides, false)
-	_end_piece = _create_piece("EndPiece", end_sides, false)
-	_connector_piece = _create_piece("ConnectorPiece", connector_sides, true)
+	var blocks: Array = level_blocks
+	if blocks.is_empty():
+		blocks = _default_level_blocks()
 
-	_register_piece(_start_piece, start_sides, start_cell)
-	_register_piece(_end_piece, end_sides, end_cell)
-	_register_piece(_connector_piece, connector_sides, Vector2i(-1, -1))
+	for block_index in range(blocks.size()):
+		var block_entry: Variant = blocks[block_index]
+		if not (block_entry is Dictionary):
+			continue
+		var block: Dictionary = block_entry
 
-	_place_fixed_piece(_start_piece, start_cell)
-	_place_fixed_piece(_end_piece, end_cell)
-	_connector_piece.position = connector_spawn_position
-	_setup_end_door()
+		var raw_sides: Variant = block.get("sides", [])
+		var sides: Array = raw_sides if raw_sides is Array else []
+		if sides.size() != 4:
+			sides = [SIDE_CLOSED, SIDE_CLOSED, SIDE_CLOSED, SIDE_CLOSED]
+
+		var piece_name := str(block.get("name", "Piece%02d" % (block_index + 1)))
+		var draggable := bool(block.get("draggable", false))
+
+		var style_variant: Variant = block.get("style", {})
+		var style: Dictionary = style_variant if style_variant is Dictionary else {}
+
+		var piece := _create_piece(piece_name, sides, draggable, style)
+		var role := str(block.get("role", BLOCK_ROLE_NORMAL)).to_lower()
+
+		if role == BLOCK_ROLE_START:
+			_start_piece = piece
+		elif role == BLOCK_ROLE_END:
+			_end_piece = piece
+		elif _connector_piece == null and draggable:
+			_connector_piece = piece
+
+		var cell := _extract_block_cell(block)
+		_register_piece(piece, sides, cell)
+		if _is_valid_cell(cell):
+			_place_fixed_piece(piece, cell)
+			if role == BLOCK_ROLE_START:
+				start_cell = cell
+			elif role == BLOCK_ROLE_END:
+				end_cell = cell
+		else:
+			piece.position = _extract_block_position(block, block_index)
+
+	if _start_piece == null:
+		_start_piece = _first_piece_on_board()
+	if _end_piece == null:
+		_end_piece = _start_piece
+	if _connector_piece == null:
+		_connector_piece = _first_draggable_piece()
+
+	if _end_piece != null:
+		_setup_end_door()
 
 
-func _create_piece(piece_name: String, sides: Array, draggable: bool) -> Node2D:
+func _default_level_blocks() -> Array:
+	return [
+		{
+			"name": "StartPiece",
+			"role": BLOCK_ROLE_START,
+			"sides": start_piece_sides.duplicate(),
+			"draggable": false,
+			"cell": start_cell,
+		},
+		{
+			"name": "EndPiece",
+			"role": BLOCK_ROLE_END,
+			"sides": end_piece_sides.duplicate(),
+			"draggable": false,
+			"cell": end_cell,
+		},
+		{
+			"name": "ConnectorPiece",
+			"role": BLOCK_ROLE_NORMAL,
+			"sides": connector_piece_sides.duplicate(),
+			"draggable": true,
+			"tray_cell": Vector2i(0, 0),
+		},
+	]
+
+
+func _extract_block_cell(block: Dictionary) -> Vector2i:
+	return _extract_cell_value(block, "cell")
+
+
+func _extract_cell_value(block: Dictionary, key: String) -> Vector2i:
+	var cell_value: Variant = block.get(key, Vector2i(-1, -1))
+	if cell_value is Vector2i:
+		return cell_value as Vector2i
+	if cell_value is Vector2:
+		var cell_vec: Vector2 = cell_value
+		return Vector2i(int(cell_vec.x), int(cell_vec.y))
+	return Vector2i(-1, -1)
+
+
+func _extract_block_position(block: Dictionary, block_index: int) -> Vector2:
+	var fallback := connector_spawn_position + Vector2(CELL_SIZE * float(block_index), 0.0)
+	var spawn_cell := _extract_cell_value(block, "spawn_cell")
+	if spawn_cell != Vector2i(-1, -1):
+		return BOARD_ORIGIN + Vector2(float(spawn_cell.x) * CELL_SIZE, float(spawn_cell.y) * CELL_SIZE)
+
+	var tray_cell := _extract_cell_value(block, "tray_cell")
+	if tray_cell != Vector2i(-1, -1):
+		return connector_spawn_position + Vector2(float(tray_cell.x) * CELL_SIZE, float(tray_cell.y) * CELL_SIZE)
+
+	var position_value: Variant = block.get("position", fallback)
+	if position_value is Vector2:
+		return position_value as Vector2
+	return fallback
+
+
+func _first_piece_on_board() -> Node2D:
+	for row in range(GRID_ROWS):
+		for col in range(GRID_COLS):
+			var slot_value: Variant = _board_slots[row][col]
+			if slot_value is Node2D:
+				return slot_value as Node2D
+	return null
+
+
+func _first_draggable_piece() -> Node2D:
+	if _draggable_pieces.is_empty():
+		return null
+	var first_value: Variant = _draggable_pieces[0]
+	if first_value is Node2D:
+		return first_value as Node2D
+	return null
+
+
+func _create_piece(piece_name: String, sides: Array, draggable: bool, style: Dictionary = {}) -> Node2D:
 	var piece := Node2D.new()
 	piece.name = piece_name
 	piece.scale = Vector2.ONE * _piece_scale
 	piece.z_index = 2 if draggable else 1
 
+	var base_texture := _texture_from_style(style, "base_texture", TEX_PUZZLE_IN4)
 	var base_sprite := Sprite2D.new()
-	base_sprite.texture = TEX_PUZZLE_IN4
+	base_sprite.texture = base_texture
 	base_sprite.centered = false
 	piece.add_child(base_sprite)
 
-	_add_side_overlay_if_needed(piece, sides[SIDE_TOP], SIDE_TOP)
-	_add_side_overlay_if_needed(piece, sides[SIDE_RIGHT], SIDE_RIGHT)
-	_add_side_overlay_if_needed(piece, sides[SIDE_BOTTOM], SIDE_BOTTOM)
-	_add_side_overlay_if_needed(piece, sides[SIDE_LEFT], SIDE_LEFT)
+	_add_side_overlay_if_needed(piece, sides[SIDE_TOP], SIDE_TOP, style)
+	_add_side_overlay_if_needed(piece, sides[SIDE_RIGHT], SIDE_RIGHT, style)
+	_add_side_overlay_if_needed(piece, sides[SIDE_BOTTOM], SIDE_BOTTOM, style)
+	_add_side_overlay_if_needed(piece, sides[SIDE_LEFT], SIDE_LEFT, style)
 
 	_grid_root.add_child(piece)
 	if draggable:
@@ -309,12 +440,16 @@ func _create_piece(piece_name: String, sides: Array, draggable: bool) -> Node2D:
 	return piece
 
 
-func _add_side_overlay_if_needed(piece: Node2D, side_kind: int, side: int) -> void:
+func _add_side_overlay_if_needed(piece: Node2D, side_kind: int, side: int, style: Dictionary = {}) -> void:
 	if side_kind == SIDE_IN:
 		return
 
 	var is_out := side_kind == SIDE_OUT
-	var texture := TEX_PUZZLE_OUT if is_out else TEX_PUZZLE_CLOSE
+	var out_texture := _texture_from_style(style, "out_texture", TEX_PUZZLE_OUT)
+	var close_texture := _texture_from_style(style, "close_texture", TEX_PUZZLE_CLOSE)
+	var texture := out_texture if is_out else close_texture
+	if texture == null:
+		return
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = true
@@ -329,6 +464,13 @@ func _add_side_overlay_if_needed(piece: Node2D, side_kind: int, side: int) -> vo
 	sprite.position = center + rotated_offset
 
 	piece.add_child(sprite)
+
+
+func _texture_from_style(style: Dictionary, key: String, fallback: Texture2D) -> Texture2D:
+	var texture_value: Variant = style.get(key, fallback)
+	if texture_value is Texture2D:
+		return texture_value as Texture2D
+	return fallback
 
 
 func _rotation_for_side(side: int) -> float:
