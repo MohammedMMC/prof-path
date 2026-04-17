@@ -2,6 +2,8 @@
 
 [ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="1_3n7h2"]
 [ext_resource type="Script" uid="uid://codn36tvxa8r0" path="res://scripts/levels/level_01.gd" id="1_msin7"]
+[ext_resource type="PackedScene" uid="uid://bku7hb346q2tq" path="res://scenes/level_bar.tscn" id="3_g0jr5"]
+[ext_resource type="PackedScene" uid="uid://b1kvnrqelcjrg" path="res://scenes/modal_pause.tscn" id="4_i4uh8"]
 
 [node name="Level01" type="Node2D" unique_id=553084612]
 script = ExtResource("1_msin7")
@@ -12,3 +14,17 @@ offset_bottom = 270.0
 
 [node name="Background" parent="Panel" unique_id=129210056 instance=ExtResource("1_3n7h2")]
 layout_mode = 1
+
+[node name="LevelBar" parent="." unique_id=590233405 instance=ExtResource("3_g0jr5")]
+offset_right = 480.0
+offset_bottom = 68.0
+
+[node name="ModalPause" parent="." unique_id=418929332 instance=ExtResource("4_i4uh8")]
+visible = false
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 480.0
+offset_bottom = 270.0
+grow_horizontal = 1
+grow_vertical = 1

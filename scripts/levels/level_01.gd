@@ -16,6 +16,11 @@ const TEX_PUZZLE_CLOSE := preload("res://assets/puzzle/puzzle_close_part.png")
 const TEX_PUZZLE_OUT := preload("res://assets/puzzle/puzzle_out_part.png")
 const DOOR_SCENE := preload("res://scenes/door.tscn")
 
+const WELCOME_SCENE := "res://scenes/welcome.tscn"
+const PAUSE_MODAL_ANIM_DURATION := 0.2
+const PAUSE_MODAL_SHOW_START_SCALE := 0.9
+const PAUSE_MODAL_HIDE_END_SCALE := 1.08
+
 const TEX_PLAYER_IDLE := preload("res://assets/player/idle.png")
 const TEX_PLAYER_WALK := preload("res://assets/player/walk.png")
 const TEX_PLAYER_RUN := preload("res://assets/player/run.png")
@@ -33,7 +38,7 @@ const SIDE_CLOSED := 2
 
 const POINTER_NONE := -999
 const POINTER_MOUSE := -1
-const POINTER_CAMERA_MOUSE := -2
+const POINTER_GRID_MOUSE := -2
 
 const CAMERA_ZOOM_MIN := 0.55
 const CAMERA_ZOOM_MAX := 2.2
@@ -55,6 +60,10 @@ const DOOR_LOCAL_RECT_POSITION := Vector2(-20.0, -23.0)
 const DOOR_LOCAL_RECT_SIZE := Vector2(40.0, 40.0)
 
 @onready var panel: Panel = $Panel
+@onready var level_bar: Control = $LevelBar
+@onready var pause_button: TextureButton = $LevelBar/PauseButton
+@onready var timer_label: Label = $LevelBar/LevelLabel/TimerLabel
+@onready var scene_modal_pause: Control = get_node_or_null("ModalPause") as Control
 
 var _base_piece_size := 50.0
 var _piece_scale := 1.0
@@ -81,10 +90,15 @@ var _player_velocity := Vector2.ZERO
 var _player_facing := 1
 var _level_complete := false
 
-var _camera: Camera2D = null
-var _camera_pan_active := false
-var _camera_pan_pointer_id := POINTER_NONE
-var _camera_pan_last_screen_position := Vector2.ZERO
+var _grid_root: Node2D = null
+var _grid_pan_active := false
+var _grid_pan_pointer_id := POINTER_NONE
+var _grid_pan_last_screen_position := Vector2.ZERO
+
+var _elapsed_seconds := 0.0
+var _is_paused := false
+var _pause_transition_active := false
+var _modal_pause: Control = null
 
 
 func _ready() -> void:
@@ -95,98 +109,122 @@ func _ready() -> void:
 	_base_piece_size = float(TEX_PUZZLE_IN4.get_height())
 	_piece_scale = CELL_SIZE / _base_piece_size
 
-	_setup_camera()
+	_setup_grid_root()
 	_init_board_slots()
 	_build_level_one_layout()
 	_setup_player()
+	_setup_level_ui()
+	_update_timer_label()
 	queue_redraw()
 
 
 func _physics_process(delta: float) -> void:
+	if _is_paused:
+		return
 	_update_player(delta)
 
 
-func _draw() -> void:
-	var board_size := Vector2(float(GRID_COLS) * CELL_SIZE, float(GRID_ROWS) * CELL_SIZE)
-	var board_rect := Rect2(BOARD_ORIGIN, board_size)
+func _process(delta: float) -> void:
+	if _is_paused or _level_complete:
+		return
 
-	draw_rect(board_rect, Color(0.0, 0.0, 0.0, 0.12), true)
-	draw_rect(Rect2(_board_cell_to_position(START_CELL), Vector2.ONE * CELL_SIZE), Color(0.2, 0.75, 0.35, 0.16), true)
-	draw_rect(Rect2(_board_cell_to_position(END_CELL), Vector2.ONE * CELL_SIZE), Color(0.85, 0.2, 0.2, 0.16), true)
+	_elapsed_seconds += delta
+	_update_timer_label()
+
+
+func _draw() -> void:
+	if _grid_root == null:
+		return
+
+	var grid_scale := _grid_root.scale.x
+	var board_size_local := Vector2(float(GRID_COLS) * CELL_SIZE, float(GRID_ROWS) * CELL_SIZE)
+	var board_origin_world := _grid_to_world(BOARD_ORIGIN)
+	var board_size_world := board_size_local * grid_scale
+
+	draw_rect(Rect2(board_origin_world, board_size_world), Color(0.0, 0.0, 0.0, 0.12), true)
+	draw_rect(Rect2(_grid_to_world(_board_cell_to_position(START_CELL)), Vector2.ONE * CELL_SIZE * grid_scale), Color(0.2, 0.75, 0.35, 0.16), true)
+	draw_rect(Rect2(_grid_to_world(_board_cell_to_position(END_CELL)), Vector2.ONE * CELL_SIZE * grid_scale), Color(0.85, 0.2, 0.2, 0.16), true)
 
 	for row in range(GRID_ROWS + 1):
-		var y := BOARD_ORIGIN.y + float(row) * CELL_SIZE
-		draw_line(Vector2(BOARD_ORIGIN.x, y), Vector2(BOARD_ORIGIN.x + board_size.x, y), Color(0.0, 0.0, 0.0, 0.35), 1.0)
+		var y := board_origin_world.y + float(row) * CELL_SIZE * grid_scale
+		draw_line(Vector2(board_origin_world.x, y), Vector2(board_origin_world.x + board_size_world.x, y), Color(0.0, 0.0, 0.0, 0.35), 1.0)
 
 	for col in range(GRID_COLS + 1):
-		var x := BOARD_ORIGIN.x + float(col) * CELL_SIZE
-		draw_line(Vector2(x, BOARD_ORIGIN.y), Vector2(x, BOARD_ORIGIN.y + board_size.y), Color(0.0, 0.0, 0.0, 0.35), 1.0)
+		var x := board_origin_world.x + float(col) * CELL_SIZE * grid_scale
+		draw_line(Vector2(x, board_origin_world.y), Vector2(x, board_origin_world.y + board_size_world.y), Color(0.0, 0.0, 0.0, 0.35), 1.0)
 
-	draw_rect(Rect2(TRAY_ORIGIN, Vector2.ONE * CELL_SIZE), Color(0.0, 0.0, 0.0, 0.3), false, 2.0)
+	draw_rect(Rect2(_grid_to_world(TRAY_ORIGIN), Vector2.ONE * CELL_SIZE * grid_scale), Color(0.0, 0.0, 0.0, 0.3), false, maxf(1.0, 2.0 * grid_scale))
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_paused:
+		return
+
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			_zoom_camera(CAMERA_WHEEL_STEP, event.position)
+			_zoom_grid(CAMERA_WHEEL_STEP, event.position)
 			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			_zoom_camera(1.0 / CAMERA_WHEEL_STEP, event.position)
+			_zoom_grid(1.0 / CAMERA_WHEEL_STEP, event.position)
 			return
 
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if event.pressed:
-				_begin_camera_pan(POINTER_CAMERA_MOUSE, event.position)
+				_begin_grid_pan(POINTER_GRID_MOUSE, event.position)
 			else:
-				_end_camera_pan(POINTER_CAMERA_MOUSE)
+				_end_grid_pan(POINTER_GRID_MOUSE)
 			return
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				_try_begin_drag(event.position, POINTER_MOUSE)
+				var did_begin_drag := _try_begin_drag(event.position, POINTER_MOUSE)
+				if not did_begin_drag:
+					_begin_grid_pan(POINTER_MOUSE, event.position)
 			else:
-				_end_drag(event.position, POINTER_MOUSE)
+				if _drag_pointer_id == POINTER_MOUSE:
+					_end_drag(event.position, POINTER_MOUSE)
+				_end_grid_pan(POINTER_MOUSE)
 			return
 
 	if event is InputEventMouseMotion:
 		if _drag_pointer_id == POINTER_MOUSE:
 			_update_drag(event.position, POINTER_MOUSE)
 			return
-		if _camera_pan_active and _camera_pan_pointer_id == POINTER_CAMERA_MOUSE:
-			_update_camera_pan(event.position, POINTER_CAMERA_MOUSE)
+		if _grid_pan_active and _grid_pan_pointer_id == POINTER_MOUSE:
+			_update_grid_pan(event.position, POINTER_MOUSE)
+			return
+		if _grid_pan_active and _grid_pan_pointer_id == POINTER_GRID_MOUSE:
+			_update_grid_pan(event.position, POINTER_GRID_MOUSE)
 		return
 
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			var did_begin_drag := _try_begin_drag(event.position, event.index)
 			if not did_begin_drag:
-				_begin_camera_pan(event.index, event.position)
+				_begin_grid_pan(event.index, event.position)
 		else:
 			if _drag_pointer_id == event.index:
 				_end_drag(event.position, event.index)
-			_end_camera_pan(event.index)
+			_end_grid_pan(event.index)
 		return
 
 	if event is InputEventScreenDrag:
 		if _drag_pointer_id == event.index:
 			_update_drag(event.position, event.index)
-		elif _camera_pan_active and _camera_pan_pointer_id == event.index:
-			_update_camera_pan(event.position, event.index)
+		elif _grid_pan_active and _grid_pan_pointer_id == event.index:
+			_update_grid_pan(event.position, event.index)
 		return
 
 	if event is InputEventMagnifyGesture:
 		var factor: float = 1.0 / maxf(event.factor, 0.01)
-		_zoom_camera(factor, event.position)
+		_zoom_grid(factor, event.position)
 		return
 
 
-func _setup_camera() -> void:
-	_camera = Camera2D.new()
-	_camera.name = "GameCamera"
-	_camera.position = BOARD_ORIGIN + Vector2(float(GRID_COLS) * CELL_SIZE, float(GRID_ROWS) * CELL_SIZE) * 0.5
-	_camera.zoom = Vector2.ONE
-	add_child(_camera)
-	_camera.make_current()
+func _setup_grid_root() -> void:
+	_grid_root = Node2D.new()
+	_grid_root.name = "GridRoot"
+	add_child(_grid_root)
 
 
 func _init_board_slots() -> void:
@@ -233,7 +271,7 @@ func _create_piece(piece_name: String, sides: Array, draggable: bool) -> Node2D:
 	_add_side_overlay_if_needed(piece, sides[SIDE_BOTTOM], SIDE_BOTTOM)
 	_add_side_overlay_if_needed(piece, sides[SIDE_LEFT], SIDE_LEFT)
 
-	add_child(piece)
+	_grid_root.add_child(piece)
 	if draggable:
 		_draggable_pieces.append(piece)
 
@@ -304,6 +342,115 @@ func _setup_end_door() -> void:
 				(door_panel as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
+func _setup_level_ui() -> void:
+	level_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	pause_button.pressed.connect(_on_pause_button_pressed)
+
+	_modal_pause = scene_modal_pause
+	if _modal_pause == null:
+		return
+
+	_modal_pause.visible = false
+	_modal_pause.modulate = Color(1, 1, 1, 0)
+	_modal_pause.scale = Vector2.ONE * PAUSE_MODAL_SHOW_START_SCALE
+	_modal_pause.pivot_offset = _modal_pause.size * 0.5
+	_modal_pause.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var continue_button: TextureButton = _modal_pause.get_node_or_null("ContinueButton") as TextureButton
+	if continue_button != null:
+		continue_button.pressed.connect(_on_continue_button_pressed)
+
+	var retry_button: TextureButton = _modal_pause.get_node_or_null("RetryButton") as TextureButton
+	if retry_button != null:
+		retry_button.pressed.connect(_on_retry_button_pressed)
+
+	var exit_button: TextureButton = _modal_pause.get_node_or_null("ExitButton") as TextureButton
+	if exit_button != null:
+		exit_button.pressed.connect(_on_exit_button_pressed)
+
+
+func _update_timer_label() -> void:
+	var total_seconds: int = int(floor(_elapsed_seconds))
+	var minutes: int = int(total_seconds / 60.0)
+	var seconds: int = total_seconds % 60
+	timer_label.text = "%02d:%02d" % [minutes, seconds]
+
+
+func _set_pause_state(paused: bool) -> void:
+	_is_paused = paused
+	pause_button.disabled = paused
+
+
+func _on_pause_button_pressed() -> void:
+	if _is_paused or _pause_transition_active or _modal_pause == null:
+		return
+
+	_set_pause_state(true)
+	_show_pause_modal_animated()
+
+
+func _on_continue_button_pressed() -> void:
+	if not _is_paused or _pause_transition_active:
+		return
+
+	_hide_pause_modal_animated(func() -> void:
+		_set_pause_state(false)
+	)
+
+
+func _on_retry_button_pressed() -> void:
+	if _pause_transition_active:
+		return
+
+	_set_pause_state(false)
+	get_tree().reload_current_scene()
+
+
+func _on_exit_button_pressed() -> void:
+	if _pause_transition_active:
+		return
+
+	_set_pause_state(false)
+	get_tree().change_scene_to_file(WELCOME_SCENE)
+
+
+func _show_pause_modal_animated() -> void:
+	if _modal_pause == null:
+		return
+
+	_pause_transition_active = true
+	_modal_pause.visible = true
+	_modal_pause.modulate = Color(1, 1, 1, 0)
+	_modal_pause.scale = Vector2.ONE * PAUSE_MODAL_SHOW_START_SCALE
+	_modal_pause.pivot_offset = _modal_pause.size * 0.5
+
+	var tween := create_tween()
+	tween.tween_property(_modal_pause, "modulate:a", 1.0, PAUSE_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_modal_pause, "scale", Vector2.ONE, PAUSE_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		_pause_transition_active = false
+	)
+
+
+func _hide_pause_modal_animated(after_hide: Callable = Callable()) -> void:
+	if _modal_pause == null:
+		if after_hide.is_valid():
+			after_hide.call()
+		return
+
+	_pause_transition_active = true
+	var tween := create_tween()
+	tween.tween_property(_modal_pause, "modulate:a", 0.0, PAUSE_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(_modal_pause, "scale", Vector2.ONE * PAUSE_MODAL_HIDE_END_SCALE, PAUSE_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		_modal_pause.visible = false
+		_modal_pause.scale = Vector2.ONE * PAUSE_MODAL_SHOW_START_SCALE
+		_pause_transition_active = false
+		if after_hide.is_valid():
+			after_hide.call()
+	)
+
+
 func _setup_player() -> void:
 	_player_root = Node2D.new()
 	_player_root.name = "Player"
@@ -353,7 +500,7 @@ func _set_player_piece(piece: Node2D, local_position: Vector2) -> void:
 
 
 func _try_begin_drag(screen_position: Vector2, pointer_id: int) -> bool:
-	if _drag_pointer_id != POINTER_NONE or _camera_pan_active:
+	if _drag_pointer_id != POINTER_NONE or _grid_pan_active:
 		return false
 
 	var piece := _draggable_piece_at_screen_position(screen_position)
@@ -371,8 +518,8 @@ func _try_begin_drag(screen_position: Vector2, pointer_id: int) -> bool:
 		piece_info["cell"] = Vector2i(-1, -1)
 		_piece_data[piece] = piece_info
 
-	var world_position := _screen_to_world(screen_position)
-	_drag_offset = piece.position - world_position
+	var grid_position := _screen_to_grid(screen_position)
+	_drag_offset = piece.position - grid_position
 	piece.z_index = 100
 	piece.move_to_front()
 	return true
@@ -382,8 +529,8 @@ func _update_drag(screen_position: Vector2, pointer_id: int) -> void:
 	if _drag_piece == null or _drag_pointer_id != pointer_id:
 		return
 
-	var world_position := _screen_to_world(screen_position)
-	_drag_piece.position = world_position + _drag_offset
+	var grid_position := _screen_to_grid(screen_position)
+	_drag_piece.position = grid_position + _drag_offset
 
 
 func _end_drag(screen_position: Vector2, pointer_id: int) -> void:
@@ -468,15 +615,21 @@ func _resolve_horizontal_transition(new_pos: Vector2) -> Vector2:
 	var max_x := _player_max_x()
 
 	if new_pos.x > max_x:
-		var next_piece_x := new_pos.x - _base_piece_size
-		if _try_transfer_player_to_neighbor(SIDE_RIGHT, next_piece_x, new_pos.y):
-			return _player_root.position
-		new_pos.x = max_x
+		if _player_velocity.x > 0.0:
+			var next_piece_x := new_pos.x - _base_piece_size
+			if _try_transfer_player_to_neighbor(SIDE_RIGHT, next_piece_x, new_pos.y):
+				return _player_root.position
+			new_pos.x = max_x
+		elif is_zero_approx(_player_velocity.x):
+			new_pos.x = max_x
 	elif new_pos.x < min_x:
-		var next_piece_x_left := new_pos.x + _base_piece_size
-		if _try_transfer_player_to_neighbor(SIDE_LEFT, next_piece_x_left, new_pos.y):
-			return _player_root.position
-		new_pos.x = min_x
+		if _player_velocity.x < 0.0:
+			var next_piece_x_left := new_pos.x + _base_piece_size
+			if _try_transfer_player_to_neighbor(SIDE_LEFT, next_piece_x_left, new_pos.y):
+				return _player_root.position
+			new_pos.x = min_x
+		elif is_zero_approx(_player_velocity.x):
+			new_pos.x = min_x
 
 	return new_pos
 
@@ -507,7 +660,7 @@ func _try_transfer_player_to_neighbor(side: int, next_piece_x: float, y_value: f
 	if not _sides_match(current_sides[side], neighbor_sides[opposite_side]):
 		return false
 
-	var clamped_x: float = clampf(next_piece_x, _player_min_x(), _player_max_x())
+	var clamped_x: float = clampf(next_piece_x, -_base_piece_size, _base_piece_size)
 	var clamped_y: float = minf(y_value, _player_floor_root_y())
 	_set_player_piece(neighbor_piece, Vector2(clamped_x, clamped_y))
 	return true
@@ -550,7 +703,7 @@ func _sides_match(a: int, b: int) -> bool:
 
 
 func _board_cell_from_screen_position(screen_position: Vector2) -> Vector2i:
-	var local_position := _screen_to_world(screen_position)
+	var local_position := _screen_to_grid(screen_position)
 	var board_size := Vector2(float(GRID_COLS) * CELL_SIZE, float(GRID_ROWS) * CELL_SIZE)
 	var board_rect := Rect2(BOARD_ORIGIN, board_size)
 
@@ -617,38 +770,51 @@ func _screen_to_world(screen_position: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() * screen_position
 
 
-func _begin_camera_pan(pointer_id: int, screen_position: Vector2) -> void:
-	if _drag_piece != null or _camera_pan_active:
+func _screen_to_grid(screen_position: Vector2) -> Vector2:
+	return _grid_root.to_local(_screen_to_world(screen_position))
+
+
+func _grid_to_world(grid_position: Vector2) -> Vector2:
+	return _grid_root.to_global(grid_position)
+
+
+func _begin_grid_pan(pointer_id: int, screen_position: Vector2) -> void:
+	if _drag_piece != null or _grid_pan_active:
 		return
 
-	_camera_pan_active = true
-	_camera_pan_pointer_id = pointer_id
-	_camera_pan_last_screen_position = screen_position
+	_grid_pan_active = true
+	_grid_pan_pointer_id = pointer_id
+	_grid_pan_last_screen_position = screen_position
 
 
-func _update_camera_pan(screen_position: Vector2, pointer_id: int) -> void:
-	if not _camera_pan_active or _camera_pan_pointer_id != pointer_id:
+func _update_grid_pan(screen_position: Vector2, pointer_id: int) -> void:
+	if not _grid_pan_active or _grid_pan_pointer_id != pointer_id:
 		return
 
-	var delta := screen_position - _camera_pan_last_screen_position
-	_camera.position -= delta * _camera.zoom.x
-	_camera_pan_last_screen_position = screen_position
+	var previous_world := _screen_to_world(_grid_pan_last_screen_position)
+	var current_world := _screen_to_world(screen_position)
+	var delta := current_world - previous_world
+	_grid_root.position += delta
+	_grid_pan_last_screen_position = screen_position
+	queue_redraw()
 
 
-func _end_camera_pan(pointer_id: int) -> void:
-	if not _camera_pan_active or _camera_pan_pointer_id != pointer_id:
+func _end_grid_pan(pointer_id: int) -> void:
+	if not _grid_pan_active or _grid_pan_pointer_id != pointer_id:
 		return
 
-	_camera_pan_active = false
-	_camera_pan_pointer_id = POINTER_NONE
+	_grid_pan_active = false
+	_grid_pan_pointer_id = POINTER_NONE
 
 
-func _zoom_camera(zoom_factor: float, anchor_screen_position: Vector2) -> void:
-	if _camera == null:
+func _zoom_grid(zoom_factor: float, anchor_screen_position: Vector2) -> void:
+	if _grid_root == null:
 		return
 
-	var before := _screen_to_world(anchor_screen_position)
-	var new_zoom: float = clampf(_camera.zoom.x * zoom_factor, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
-	_camera.zoom = Vector2.ONE * new_zoom
-	var after := _screen_to_world(anchor_screen_position)
-	_camera.position += before - after
+	var anchor_world := _screen_to_world(anchor_screen_position)
+	var local_before := _grid_root.to_local(anchor_world)
+	var new_zoom: float = clampf(_grid_root.scale.x * zoom_factor, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
+	_grid_root.scale = Vector2.ONE * new_zoom
+	var anchor_after := _grid_root.to_global(local_before)
+	_grid_root.position += anchor_world - anchor_after
+	queue_redraw()

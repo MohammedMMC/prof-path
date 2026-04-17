@@ -1,0 +1,82 @@
+[gd_scene format=3 uid="uid://b1kvnrqelcjrg"]
+
+[ext_resource type="Texture2D" uid="uid://b68bmx8nc70ay" path="res://assets/buttons/button_devamet.png" id="1_fy73t"]
+[ext_resource type="Texture2D" uid="uid://ccvw6m1qfogom" path="res://assets/buttons/button_devamet_clicked.png" id="2_ghs64"]
+[ext_resource type="Texture2D" uid="uid://mgy1r87n36yr" path="res://assets/buttons/button_devamet_hover.png" id="3_eesex"]
+[ext_resource type="Texture2D" uid="uid://r3spaduqp84d" path="res://assets/buttons/button_cik.png" id="4_i28wn"]
+[ext_resource type="Texture2D" uid="uid://hgwfhq24ldo6" path="res://assets/buttons/button_cik_clicked.png" id="5_j3bxg"]
+[ext_resource type="Texture2D" uid="uid://bvv34xrmo2nea" path="res://assets/buttons/button_cik_hover.png" id="6_olqw7"]
+[ext_resource type="FontFile" uid="uid://dkwxckupac55q" path="res://pixel.ttf" id="7_nkusc"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_eqxri"]
+font = ExtResource("7_nkusc")
+font_size = 64
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 2)
+
+[node name="ModalPause" type="Control" unique_id=418929332]
+z_index = 10
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=298380823]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.39215687)
+
+[node name="ContinueButton" type="TextureButton" parent="." unique_id=374874755]
+layout_mode = 0
+offset_left = 119.5
+offset_top = 54.0
+offset_right = 360.5
+offset_bottom = 112.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_fy73t")
+texture_pressed = ExtResource("2_ghs64")
+texture_hover = ExtResource("3_eesex")
+texture_disabled = ExtResource("3_eesex")
+texture_focused = ExtResource("3_eesex")
+stretch_mode = 5
+
+[node name="RetryButton" type="TextureButton" parent="." unique_id=1159138112]
+layout_mode = 0
+offset_left = 119.5
+offset_top = 122.0
+offset_right = 360.5
+offset_bottom = 171.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_fy73t")
+texture_pressed = ExtResource("2_ghs64")
+texture_hover = ExtResource("3_eesex")
+texture_disabled = ExtResource("3_eesex")
+texture_focused = ExtResource("3_eesex")
+stretch_mode = 5
+
+[node name="ExitButton" type="TextureButton" parent="." unique_id=1585943111]
+layout_mode = 0
+offset_left = 119.5
+offset_top = 181.0
+offset_right = 360.5
+offset_bottom = 224.0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("4_i28wn")
+texture_pressed = ExtResource("5_j3bxg")
+texture_hover = ExtResource("6_olqw7")
+texture_disabled = ExtResource("6_olqw7")
+texture_focused = ExtResource("6_olqw7")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="." unique_id=631556157]
+layout_mode = 0
+offset_left = 127.0
+offset_top = 24.0
+offset_right = 354.0
+offset_bottom = 89.0
+label_settings = SubResource("LabelSettings_eqxri")

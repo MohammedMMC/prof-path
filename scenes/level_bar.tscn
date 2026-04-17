@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://bku7hb346q2tq"]
+
+[ext_resource type="Texture2D" uid="uid://cbesodxiyc1en" path="res://assets/buttons/button_pause.png" id="1_ilho4"]
+[ext_resource type="FontFile" uid="uid://dkwxckupac55q" path="res://pixel.ttf" id="1_wa5bs"]
+[ext_resource type="Texture2D" uid="uid://6e7nerolbsmg" path="res://assets/buttons/button_pause_clicked.png" id="2_wa5bs"]
+[ext_resource type="Texture2D" uid="uid://dbqvef3fdyj37" path="res://assets/buttons/button_pause_hover.png" id="3_7k1g8"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_7k1g8"]
+font = ExtResource("1_wa5bs")
+font_size = 26
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_tc6tb"]
+font = ExtResource("1_wa5bs")
+font_size = 19
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 1)
+
+[node name="LevelBar" type="Control" unique_id=590233405]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LevelLabel" type="Label" parent="." unique_id=1023622098]
+layout_mode = 1
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 80.0
+offset_bottom = 39.0
+text = "Sevye 1"
+label_settings = SubResource("LabelSettings_7k1g8")
+
+[node name="TimerLabel" type="Label" parent="LevelLabel" unique_id=98822085]
+layout_mode = 0
+offset_top = 29.0
+offset_right = 33.0
+offset_bottom = 49.0
+text = "00:00"
+label_settings = SubResource("LabelSettings_tc6tb")
+
+[node name="PauseButton" type="TextureButton" parent="." unique_id=1056672952]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -46.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 48.0
+grow_horizontal = 0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_ilho4")
+texture_pressed = ExtResource("2_wa5bs")
+texture_hover = ExtResource("3_7k1g8")
+texture_disabled = ExtResource("3_7k1g8")
+texture_focused = ExtResource("3_7k1g8")
+stretch_mode = 5
