@@ -57,6 +57,7 @@ const PLAYER_WALK_SPEED := 70.0
 const PLAYER_RUN_SPEED := 120.0
 const PLAYER_JUMP_SPEED := 180.0
 const PLAYER_GRAVITY := 420.0
+const PLAYER_DROP_TRANSFER_SPEED := 45.0
 
 const PLAYER_HITBOX_INSET_LEFT := 3.0
 const PLAYER_HITBOX_INSET_RIGHT := 3.0
@@ -1070,6 +1071,11 @@ func _update_player(delta: float) -> void:
 	var new_pos := previous_pos + _player_velocity * delta
 	new_pos = _resolve_horizontal_transition(new_pos)
 	new_pos = _resolve_piece_wall_collisions(previous_pos, new_pos)
+	if _try_transfer_player_to_bottom_piece(new_pos.x):
+		_update_player_animation(direction, wants_run)
+		if not _level_complete and _is_player_in_door():
+			_start_win_sequence()
+		return
 	var floor_y := _player_floor_root_y()
 
 	if new_pos.y >= floor_y:
@@ -1082,6 +1088,46 @@ func _update_player(delta: float) -> void:
 
 	if not _level_complete and _is_player_in_door():
 		_start_win_sequence()
+
+
+func _try_transfer_player_to_bottom_piece(next_piece_x: float) -> bool:
+	if _player_piece == null or _player_root == null:
+		return false
+	if _player_velocity.y < 0.0:
+		return false
+	if not _is_player_on_floor():
+		return false
+
+	var current_info: Dictionary = _piece_data.get(_player_piece, {})
+	if current_info.is_empty():
+		return false
+
+	var current_cell: Vector2i = current_info["cell"]
+	if not _is_valid_cell(current_cell):
+		return false
+
+	var below_cell := current_cell + Vector2i(0, 1)
+	if not _is_valid_cell(below_cell):
+		return false
+
+	var below_piece: Node2D = _board_slots[below_cell.y][below_cell.x]
+	if below_piece == null:
+		return false
+
+	var current_sides: Array = current_info["sides"]
+	var below_info: Dictionary = _piece_data.get(below_piece, {})
+	if below_info.is_empty():
+		return false
+	var below_sides: Array = below_info["sides"]
+
+	if not _sides_match(current_sides[SIDE_BOTTOM], below_sides[SIDE_TOP]):
+		return false
+
+	var clamped_x := clampf(next_piece_x, _player_min_x(), _player_max_x())
+	var fall_start_y := -_player_visual_size().y
+	_set_player_piece(below_piece, Vector2(clamped_x, fall_start_y))
+	_player_velocity.y = maxf(_player_velocity.y, PLAYER_DROP_TRANSFER_SPEED)
+	return true
 
 
 func _resolve_piece_wall_collisions(previous_pos: Vector2, next_pos: Vector2) -> Vector2:
