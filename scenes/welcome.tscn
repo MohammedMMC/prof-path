@@ -32,9 +32,9 @@ layout_mode = 1
 [node name="PlayButton" type="TextureButton" parent="." unique_id=2010522178]
 layout_mode = 0
 offset_left = 119.5
-offset_top = 119.0
+offset_top = 116.0
 offset_right = 360.5
-offset_bottom = 177.0
+offset_bottom = 174.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("5_o7btu")
 texture_pressed = ExtResource("6_fc3ck")
@@ -46,9 +46,9 @@ stretch_mode = 5
 [node name="ExitButton" type="TextureButton" parent="." unique_id=775647996]
 layout_mode = 0
 offset_left = 119.5
-offset_top = 185.0
+offset_top = 184.0
 offset_right = 360.5
-offset_bottom = 228.0
+offset_bottom = 227.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("2_wm3rh")
 texture_pressed = ExtResource("3_1k3ta")
@@ -59,11 +59,11 @@ stretch_mode = 5
 
 [node name="Label" type="Label" parent="." unique_id=883842957]
 layout_mode = 0
-offset_left = 127.0
+offset_left = 125.0
 offset_top = 24.0
-offset_right = 354.0
+offset_right = 352.0
 offset_bottom = 89.0
-text = "Prof. Path"
+text = "Prof. Puzz"
 label_settings = SubResource("LabelSettings_fc3ck")
 
 [node name="FadeRect" type="ColorRect" parent="." unique_id=1781965314]
