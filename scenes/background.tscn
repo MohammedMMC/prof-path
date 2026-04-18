@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dma318274xmu4"]
+
+[ext_resource type="Texture2D" uid="uid://deak5pd8h0g12" path="res://assets/bg1.png" id="1_bkp1e"]
+
+[node name="Background" type="Control" unique_id=129210056]
+modulate = Color(0.74558026, 0.7455802, 0.7455802, 1)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1256483139]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_bkp1e")
+expand_mode = 2

@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://cscefewd4st6k"]
+
+[ext_resource type="Script" uid="uid://27h4odkv1ifw" path="res://scripts/welcome.gd" id="1_recsy"]
+[ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="1_uety2"]
+[ext_resource type="Texture2D" uid="uid://r3spaduqp84d" path="res://assets/buttons/button_cik.png" id="2_wm3rh"]
+[ext_resource type="Texture2D" uid="uid://hgwfhq24ldo6" path="res://assets/buttons/button_cik_clicked.png" id="3_1k3ta"]
+[ext_resource type="Texture2D" uid="uid://bvv34xrmo2nea" path="res://assets/buttons/button_cik_hover.png" id="4_v60w2"]
+[ext_resource type="FontFile" uid="uid://dkwxckupac55q" path="res://pixel.ttf" id="5_1k3ta"]
+[ext_resource type="Texture2D" uid="uid://bovq2uhig0u4" path="res://assets/buttons/button_oyna.png" id="5_o7btu"]
+[ext_resource type="Texture2D" uid="uid://b1la5ih88xrkk" path="res://assets/buttons/button_oyna_cilcked.png" id="6_fc3ck"]
+[ext_resource type="Texture2D" uid="uid://f5w04wwprquq" path="res://assets/buttons/button_oyna_hover.png" id="7_recsy"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_fc3ck"]
+font = ExtResource("5_1k3ta")
+font_size = 64
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 2)
+
+[node name="Welcome" type="Control" unique_id=1121267678]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_recsy")
+
+[node name="Background" parent="." unique_id=129210056 instance=ExtResource("1_uety2")]
+layout_mode = 1
+
+[node name="PlayButton" type="TextureButton" parent="." unique_id=2010522178]
+layout_mode = 0
+offset_left = 119.5
+offset_top = 119.0
+offset_right = 360.5
+offset_bottom = 177.0
+texture_normal = ExtResource("5_o7btu")
+texture_pressed = ExtResource("6_fc3ck")
+texture_hover = ExtResource("7_recsy")
+texture_disabled = ExtResource("7_recsy")
+texture_focused = ExtResource("7_recsy")
+stretch_mode = 5
+
+[node name="ExitButton" type="TextureButton" parent="." unique_id=775647996]
+layout_mode = 0
+offset_left = 119.5
+offset_top = 185.0
+offset_right = 360.5
+offset_bottom = 228.0
+texture_normal = ExtResource("2_wm3rh")
+texture_pressed = ExtResource("3_1k3ta")
+texture_hover = ExtResource("4_v60w2")
+texture_disabled = ExtResource("4_v60w2")
+texture_focused = ExtResource("4_v60w2")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="." unique_id=883842957]
+layout_mode = 0
+offset_left = 127.0
+offset_top = 24.0
+offset_right = 354.0
+offset_bottom = 89.0
+text = "Prof. Path"
+label_settings = SubResource("LabelSettings_fc3ck")
+
+[node name="FadeRect" type="ColorRect" parent="." unique_id=1781965314]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

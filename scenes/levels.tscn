@@ -1,0 +1,167 @@
+[gd_scene format=3 uid="uid://d02jlnvvfwwis"]
+
+[ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="1_hcnff"]
+[ext_resource type="FontFile" uid="uid://dkwxckupac55q" path="res://pixel.ttf" id="2_jj4e6"]
+[ext_resource type="Texture2D" uid="uid://b6v58pxd70ubu" path="res://assets/buttons/level_box.png" id="3_byla0"]
+[ext_resource type="Texture2D" uid="uid://cnk2y8g3k2l72" path="res://assets/buttons/level_box_clicked.png" id="4_r44b6"]
+[ext_resource type="Texture2D" uid="uid://cmvgma4wjtxeq" path="res://assets/buttons/level_box_disabled.png" id="5_1jewu"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_ibiju"]
+font = ExtResource("2_jj4e6")
+font_size = 40
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_00hpi"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_6g56m"]
+font = ExtResource("2_jj4e6")
+font_size = 30
+shadow_size = 0
+shadow_color = Color(0.3137255, 0.6627451, 0.47058824, 1)
+shadow_offset = Vector2(0, 2)
+
+[node name="Levels" type="Control" unique_id=1142635922]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" parent="." unique_id=129210056 instance=ExtResource("1_hcnff")]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="." unique_id=1414658702]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -71.0
+offset_top = -110.5
+offset_right = 71.0
+offset_bottom = -69.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "Seviye Seç"
+label_settings = SubResource("LabelSettings_ibiju")
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=1894983537]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -98.0
+offset_top = -49.0
+offset_right = 98.0
+offset_bottom = 81.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="Level01" type="TextureButton" parent="GridContainer" unique_id=1803380522]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level01" unique_id=504218737]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "1"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level02" type="TextureButton" parent="GridContainer" unique_id=728175500]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level02" unique_id=1106225264]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "2"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level03" type="TextureButton" parent="GridContainer" unique_id=1750761049]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level03" unique_id=2063104449]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "3"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level04" type="TextureButton" parent="GridContainer" unique_id=2133917993]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level04" unique_id=625546680]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "4"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level05" type="TextureButton" parent="GridContainer" unique_id=1452027984]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level05" unique_id=1666497927]
+layout_mode = 0
+offset_right = 39.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "5"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
