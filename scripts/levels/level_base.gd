@@ -1,7 +1,6 @@
 @tool
 extends Node2D
 
-
 const GRID_ROWS := 5
 const GRID_COLS := 8
 
