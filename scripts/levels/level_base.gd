@@ -1,4 +1,4 @@
-@tool
+﻿@tool
 extends Node2D
 
 const GRID_ROWS := 5
@@ -29,6 +29,11 @@ const TEX_PLAYER_WALK := preload("res://assets/player/walk.png")
 const TEX_PLAYER_RUN := preload("res://assets/player/run.png")
 const TEX_PLAYER_JUMP_UP := preload("res://assets/player/jump_up.png")
 const TEX_PLAYER_JUMP_DOWN := preload("res://assets/player/jump_down.png")
+const TEX_ZOMBIE_WALK := preload("res://assets/zombie/walk.png")
+
+const ZOMBIE_FRAME_SIZE := Vector2(32, 30)
+const ZOMBIE_SCALE := 0.66
+const ZOMBIE_WALK_SPEED := 35.0
 
 const SIDE_TOP := 0
 const SIDE_RIGHT := 1
@@ -75,6 +80,7 @@ const DOOR_LOCAL_RECT_SIZE := Vector2(40.0, 40.0)
 @onready var timer_label: Label = $LevelBar/LevelLabel/TimerLabel
 @onready var scene_modal_pause: Control = get_node_or_null("ModalPause") as Control
 @onready var scene_modal_win: Control = get_node_or_null("ModalWin") as Control
+@onready var scene_modal_lose: Control = get_node_or_null("ModalLose") as Control
 @onready var block_wall_maps_root: Node = get_node_or_null("BlockWallMaps")
 
 var level_number := 1
@@ -131,6 +137,8 @@ var _player_velocity := Vector2.ZERO
 var _player_facing := 1
 var _level_complete := false
 
+var _zombies: Array = []
+
 var _grid_root: Node2D = null
 var _grid_pan_active := false
 var _grid_pan_pointer_id := POINTER_NONE
@@ -140,8 +148,10 @@ var _elapsed_seconds := 0.0
 var _is_paused := false
 var _pause_transition_active := false
 var _win_transition_active := false
+var _lose_transition_active := false
 var _modal_pause: Control = null
 var _modal_win: Control = null
+var _modal_lose: Control = null
 var _pause_canvas_layer: CanvasLayer = null
 var _win_second_star: CanvasItem = null
 var _win_third_star: CanvasItem = null
@@ -180,6 +190,7 @@ func _physics_process(delta: float) -> void:
 	if _is_paused:
 		return
 	_update_player(delta)
+	_update_zombies(delta)
 
 
 func _process(delta: float) -> void:
@@ -194,7 +205,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	if _grid_root == null:
+	if not is_instance_valid(_grid_root):
 		if Engine.is_editor_hint():
 			_draw_editor_grid()
 		return
@@ -326,7 +337,9 @@ func _build_level_layout() -> void:
 	_start_piece = null
 	_end_piece = null
 	_connector_piece = null
+	_zombies.clear()
 
+	var zombie_pieces: Array = []
 	var blocks: Array = []
 	if use_scene_level_pieces:
 		blocks = _scene_level_blocks()
@@ -373,6 +386,9 @@ func _build_level_layout() -> void:
 		else:
 			piece.position = _extract_block_position(block, block_index)
 
+		if bool(block.get("zombie", false)):
+			zombie_pieces.append(piece)
+
 	if _start_piece == null:
 		_start_piece = _first_piece_on_board()
 	if _end_piece == null:
@@ -382,6 +398,9 @@ func _build_level_layout() -> void:
 
 	if _end_piece != null:
 		_setup_end_door()
+
+	for zombie_piece in zombie_pieces:
+		_spawn_zombie_on_piece(zombie_piece)
 
 
 func _scene_level_blocks() -> Array:
@@ -736,6 +755,7 @@ func _setup_level_ui() -> void:
 		levels_button.pressed.connect(_on_pause_levels_button_pressed)
 
 	_setup_win_modal()
+	_setup_lose_modal()
 
 
 func _setup_win_modal() -> void:
@@ -768,6 +788,101 @@ func _setup_win_modal() -> void:
 		_win_second_star.visible = false
 	if _win_third_star != null:
 		_win_third_star.visible = false
+
+
+func _setup_lose_modal() -> void:
+	_modal_lose = scene_modal_lose
+	if _modal_lose == null:
+		return
+
+	if _modal_lose.get_parent() != _pause_canvas_layer:
+		_modal_lose.reparent(_pause_canvas_layer)
+
+	_modal_lose.z_as_relative = false
+	_modal_lose.z_index = 102
+	_modal_lose.visible = false
+	_modal_lose.modulate = Color(1, 1, 1, 0)
+	_modal_lose.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+	_modal_lose.pivot_offset = _modal_lose.size * 0.5
+	_modal_lose.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var levels_button: TextureButton = _modal_lose.get_node_or_null("TextureRect/LevelsButton") as TextureButton
+	if levels_button != null:
+		levels_button.pressed.connect(_on_lose_levels_button_pressed)
+
+	var try_again_button: TextureButton = _modal_lose.get_node_or_null("TextureRect/TryAgainButton") as TextureButton
+	if try_again_button != null:
+		try_again_button.pressed.connect(_on_lose_try_again_button_pressed)
+
+
+func _start_lose_sequence() -> void:
+	if _level_complete:
+		return
+
+	_level_complete = true
+	_set_pause_state(true)
+	_player_velocity = Vector2.ZERO
+	if _player_sprite != null:
+		_player_sprite.play("idle")
+
+	await get_tree().create_timer(WIN_MODAL_SHOW_DELAY_SECONDS * 0.5).timeout
+	_show_lose_modal_animated()
+
+
+func _show_lose_modal_animated() -> void:
+	if _modal_lose == null:
+		return
+
+	_lose_transition_active = true
+	_modal_lose.visible = true
+	_modal_lose.move_to_front()
+	_modal_lose.modulate = Color(1, 1, 1, 0)
+	_modal_lose.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+	_modal_lose.pivot_offset = _modal_lose.size * 0.5
+
+	var tween := create_tween()
+	tween.tween_property(_modal_lose, "modulate:a", 1.0, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(_modal_lose, "scale", Vector2.ONE, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void:
+		_lose_transition_active = false
+	)
+
+
+func _hide_lose_modal_animated(after_hide: Callable = Callable()) -> void:
+	if _modal_lose == null:
+		if after_hide.is_valid():
+			after_hide.call()
+		return
+
+	_lose_transition_active = true
+	var tween := create_tween()
+	tween.tween_property(_modal_lose, "modulate:a", 0.0, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(_modal_lose, "scale", Vector2.ONE * WIN_MODAL_HIDE_END_SCALE, WIN_MODAL_ANIM_DURATION).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		_modal_lose.visible = false
+		_modal_lose.scale = Vector2.ONE * WIN_MODAL_SHOW_START_SCALE
+		_lose_transition_active = false
+		if after_hide.is_valid():
+			after_hide.call()
+	)
+
+
+func _on_lose_levels_button_pressed() -> void:
+	if _lose_transition_active:
+		return
+
+	_hide_lose_modal_animated(func() -> void:
+		_set_pause_state(false)
+		get_tree().change_scene_to_file(LEVELS_SCENE)
+	)
+
+
+func _on_lose_try_again_button_pressed() -> void:
+	if _lose_transition_active:
+		return
+
+	_set_pause_state(false)
+	get_tree().reload_current_scene()
 
 
 func _update_timer_label() -> void:
@@ -1484,3 +1599,78 @@ func _zoom_grid(zoom_factor: float, anchor_screen_position: Vector2) -> void:
 	var anchor_after := _grid_root.to_global(local_before)
 	_grid_root.position += anchor_world - anchor_after
 	queue_redraw()
+
+
+func _zombie_floor_y() -> float:
+	return _base_piece_size - ZOMBIE_FRAME_SIZE.y * ZOMBIE_SCALE
+
+
+func _zombie_min_x() -> float:
+	return 0.0
+
+
+func _zombie_max_x() -> float:
+	return _base_piece_size - ZOMBIE_FRAME_SIZE.x * ZOMBIE_SCALE
+
+
+func _spawn_zombie_on_piece(piece: Node2D) -> void:
+	var frames := SpriteFrames.new()
+	frames.add_animation("walk")
+	frames.set_animation_loop("walk", true)
+	frames.set_animation_speed("walk", 8.0)
+	for i in range(4):
+		var atlas := AtlasTexture.new()
+		atlas.atlas = TEX_ZOMBIE_WALK
+		atlas.region = Rect2(i * int(ZOMBIE_FRAME_SIZE.x), 0, int(ZOMBIE_FRAME_SIZE.x), int(ZOMBIE_FRAME_SIZE.y))
+		frames.add_frame("walk", atlas)
+
+	var sprite := AnimatedSprite2D.new()
+	sprite.centered = false
+	sprite.scale = Vector2.ONE * ZOMBIE_SCALE
+	sprite.sprite_frames = frames
+	sprite.play("walk")
+
+	var zombie_root := Node2D.new()
+	zombie_root.name = "Zombie"
+	zombie_root.z_index = 15
+	zombie_root.add_child(sprite)
+	piece.add_child(zombie_root)
+
+	zombie_root.position = Vector2(_zombie_min_x(), _zombie_floor_y())
+	sprite.flip_h = true
+
+	_zombies.append({
+		"root": zombie_root,
+		"sprite": sprite,
+		"piece": piece,
+		"facing": 1,
+	})
+
+
+func _update_zombies(delta: float) -> void:
+	for zombie in _zombies:
+		var zombie_root: Node2D = zombie["root"]
+		var sprite: AnimatedSprite2D = zombie["sprite"]
+		var zombie_piece: Node2D = zombie["piece"]
+		var facing: int = zombie["facing"]
+
+		var pos := zombie_root.position
+		pos.x += ZOMBIE_WALK_SPEED * float(facing) * delta
+
+		if facing == 1 and pos.x >= _zombie_max_x():
+			pos.x = _zombie_max_x()
+			facing = -1
+		elif facing == -1 and pos.x <= _zombie_min_x():
+			pos.x = _zombie_min_x()
+			facing = 1
+
+		zombie["facing"] = facing
+		sprite.flip_h = facing > 0
+		zombie_root.position = pos
+
+		if not _level_complete and _player_piece == zombie_piece and _player_root != null:
+			var zombie_rect := Rect2(pos, ZOMBIE_FRAME_SIZE * ZOMBIE_SCALE)
+			var player_rect := _player_hitbox_rect(_player_root.position)
+			if zombie_rect.grow(-8.0).intersects(player_rect):
+				_start_lose_sequence()
+				return

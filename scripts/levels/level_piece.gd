@@ -48,6 +48,7 @@ const DEFAULT_WALL_TILE_TEXTURE := preload("res://assets/tilemap.png")
 @export var explicit_position := Vector2.ZERO
 
 @export var wall_map: String = ""
+@export var has_zombie := false
 
 @export var base_texture: Texture2D = DEFAULT_BASE_TEXTURE
 @export var out_texture: Texture2D = DEFAULT_OUT_TEXTURE
@@ -281,6 +282,8 @@ func to_block_dict() -> Dictionary:
 			block["tray_cell"] = tray_cell
 		PlacementMode.POSITION:
 			block["position"] = explicit_position
+
+	block["zombie"] = has_zombie
 
 	var wall_map_name := wall_map.strip_edges()
 	if wall_map_name.is_empty():

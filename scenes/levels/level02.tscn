@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://bku7hb346q2tq" path="res://scenes/level_bar.tscn" id="3_bhr4b"]
 [ext_resource type="PackedScene" uid="uid://b1kvnrqelcjrg" path="res://scenes/modal_pause.tscn" id="4_5rl6w"]
 [ext_resource type="PackedScene" uid="uid://xelsgsbgn2mk" path="res://scenes/modal_win.tscn" id="5_2fscy"]
+[ext_resource type="PackedScene" uid="uid://dekh4cjjrhoe0" path="res://scenes/modal_lose.tscn" id="6_70imb"]
 [ext_resource type="Script" uid="uid://ctt40orvs67se" path="res://scripts/levels/level_piece.gd" id="6_y213i"]
 [ext_resource type="Texture2D" uid="uid://bt448wy6rls8u" path="res://assets/tilemap.png" id="7_sotb0"]
 
@@ -2556,6 +2557,16 @@ grow_horizontal = 1
 grow_vertical = 1
 
 [node name="ModalWin" parent="." unique_id=853956185 instance=ExtResource("5_2fscy")]
+visible = false
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 480.0
+offset_bottom = 270.0
+grow_horizontal = 1
+grow_vertical = 1
+
+[node name="ModalLose" parent="." unique_id=982783170 instance=ExtResource("6_70imb")]
 visible = false
 anchors_preset = 0
 anchor_right = 0.0
