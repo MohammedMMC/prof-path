@@ -12,7 +12,6 @@
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_if0f4"]
 texture = ExtResource("7_sotb0")
 texture_region_size = Vector2i(50, 50)
-0:0/0 = 0
 
 [sub_resource type="TileSet" id="TileSet_ylsda"]
 tile_size = Vector2i(50, 50)
@@ -21,7 +20,6 @@ sources/0 = SubResource("TileSetAtlasSource_if0f4")
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qjm5h"]
 texture = ExtResource("7_sotb0")
 texture_region_size = Vector2i(50, 50)
-0:0/0 = 0
 
 [sub_resource type="TileSet" id="TileSet_y32f7"]
 tile_size = Vector2i(50, 50)
@@ -2532,7 +2530,7 @@ texture_region_size = Vector2i(1, 1)
 tile_size = Vector2i(1, 1)
 sources/0 = SubResource("TileSetAtlasSource_cd15k")
 
-[node name="Level01" type="Node2D" unique_id=553084612]
+[node name="Level02" type="Node2D" unique_id=553084612]
 script = ExtResource("1_1wv6l")
 
 [node name="Panel" type="Panel" parent="." unique_id=984896560]
@@ -2585,11 +2583,14 @@ position = Vector2(140, 100)
 scale = Vector2(0.8, 0.8)
 script = ExtResource("6_y213i")
 role = 0
-draggable = false
 side_bottom = 1
 placement_mode = 0
 board_cell = Vector2i(3, 2)
 wall_map = "StartPiece"
+has_key = null
+key_x = null
+key_y = null
+door_locked = null
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/StartPiece" unique_id=1041937149]
 z_index = 4
@@ -2600,11 +2601,14 @@ position = Vector2(300, 140)
 scale = Vector2(0.8, 0.8)
 script = ExtResource("6_y213i")
 role = 1
-draggable = false
 side_left = 0
 placement_mode = 0
 board_cell = Vector2i(7, 3)
 wall_map = "EndPiece"
+has_key = null
+key_x = null
+key_y = null
+door_locked = null
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/EndPiece" unique_id=1202931430]
 z_index = 4
@@ -2619,6 +2623,10 @@ side_right = 1
 placement_mode = 1
 spawn_cell = Vector2i(5, 1)
 wall_map = "Connector01"
+has_key = null
+key_x = null
+key_y = null
+door_locked = null
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/Connector01" unique_id=2022251737]
 z_index = 4

@@ -12,6 +12,9 @@ const TEX_PUZZLE_IN4 := preload("res://assets/puzzle/puzzle_in4.png")
 const TEX_PUZZLE_CLOSE := preload("res://assets/puzzle/puzzle_close_part.png")
 const TEX_PUZZLE_OUT := preload("res://assets/puzzle/puzzle_out_part.png")
 const DOOR_SCENE := preload("res://scenes/door.tscn")
+const KEY_SCENE := preload("res://scenes/key.tscn")
+const TEX_DOOR_OPEN := preload("res://assets/door.png")
+const TEX_DOOR_CLOSED := preload("res://assets/door_closed.png")
 const LEVEL_PROGRESS := preload("res://scripts/level_progress.gd")
 
 const WELCOME_SCENE := "res://scenes/welcome.tscn"
@@ -68,6 +71,7 @@ const PLAYER_HITBOX_INSET_LEFT := 3.0
 const PLAYER_HITBOX_INSET_RIGHT := 3.0
 const PLAYER_HITBOX_INSET_TOP := 1.0
 const PLAYER_HITBOX_INSET_BOTTOM := 1.0
+const PLAYER_WALL_SNAP_OFFSET := 2.0
 const PLAYER_WIN_TELEPORT_Y_OFFSET := 2.0
 
 const DOOR_LOCAL_RECT_POSITION := Vector2(-20.0, -23.0)
@@ -136,8 +140,11 @@ var _player_sprite: AnimatedSprite2D = null
 var _player_velocity := Vector2.ZERO
 var _player_facing := 1
 var _level_complete := false
+var _player_on_wall_floor := false
 
 var _zombies: Array = []
+var _key_instances: Array = []
+var _door_locked := false
 
 var _grid_root: Node2D = null
 var _grid_pan_active := false
@@ -338,8 +345,11 @@ func _build_level_layout() -> void:
 	_end_piece = null
 	_connector_piece = null
 	_zombies.clear()
+	_key_instances.clear()
+	_door_locked = false
 
 	var zombie_pieces: Array = []
+	var key_pieces: Array = []
 	var blocks: Array = []
 	if use_scene_level_pieces:
 		blocks = _scene_level_blocks()
@@ -389,6 +399,13 @@ func _build_level_layout() -> void:
 		if bool(block.get("zombie", false)):
 			zombie_pieces.append(piece)
 
+		var key_pos_v: Variant = block.get("key_position", null)
+		if key_pos_v is Vector2:
+			key_pieces.append({"piece": piece, "pos": key_pos_v as Vector2})
+
+		if role == BLOCK_ROLE_END and bool(block.get("door_locked", false)):
+			_door_locked = true
+
 	if _start_piece == null:
 		_start_piece = _first_piece_on_board()
 	if _end_piece == null:
@@ -401,6 +418,9 @@ func _build_level_layout() -> void:
 
 	for zombie_piece in zombie_pieces:
 		_spawn_zombie_on_piece(zombie_piece)
+
+	for kd in key_pieces:
+		_spawn_key_on_piece(kd["piece"] as Node2D, kd["pos"] as Vector2)
 
 
 func _scene_level_blocks() -> Array:
@@ -694,6 +714,10 @@ func _setup_end_door() -> void:
 			var door_panel := _door_instance.get_node("Panel")
 			if door_panel is Control:
 				(door_panel as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if _door_locked:
+			var door_sprite := _door_instance.get_node_or_null("Door") as Sprite2D
+			if door_sprite != null:
+				door_sprite.texture = TEX_DOOR_CLOSED
 
 
 func _door_visual_rect_from_instance(instance: Node) -> Rect2:
@@ -1218,8 +1242,9 @@ func _update_player(delta: float) -> void:
 	elif direction > 0.0:
 		_player_facing = 1
 
-	if _is_player_on_floor() and (Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("ui_up")):
+	if (_is_player_on_floor() or _player_on_wall_floor) and (Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("ui_up")):
 		_player_velocity.y = -PLAYER_JUMP_SPEED
+	_player_on_wall_floor = false
 
 	_player_velocity.y += PLAYER_GRAVITY * delta
 
@@ -1229,18 +1254,32 @@ func _update_player(delta: float) -> void:
 	new_pos = _resolve_piece_wall_collisions(previous_pos, new_pos)
 	if _try_transfer_player_to_bottom_piece(new_pos.x):
 		_update_player_animation(direction, wants_run)
+		_check_player_keys()
 		if not _level_complete and _is_player_in_door():
 			_start_win_sequence()
 		return
 	var floor_y := _player_floor_root_y()
 
-	if new_pos.y >= floor_y:
+	if new_pos.y >= floor_y and _player_velocity.y >= 0.0:
 		new_pos.y = floor_y
-		if _player_velocity.y > 0.0:
+		_player_velocity.y = 0.0
+
+	var ceiling_y := -PLAYER_HITBOX_INSET_TOP
+	if new_pos.y < ceiling_y:
+		if _try_transfer_player_to_top_piece(new_pos):
+			_update_player_animation(direction, wants_run)
+			_check_player_keys()
+			if not _level_complete and _is_player_in_door():
+				_start_win_sequence()
+			return
+		new_pos.y = ceiling_y
+		if _player_velocity.y < 0.0:
 			_player_velocity.y = 0.0
 
 	_player_root.position = new_pos
 	_update_player_animation(direction, wants_run)
+
+	_check_player_keys()
 
 	if not _level_complete and _is_player_in_door():
 		_start_win_sequence()
@@ -1270,19 +1309,35 @@ func _try_transfer_player_to_bottom_piece(next_piece_x: float) -> bool:
 	if below_piece == null:
 		return false
 
-	var current_sides: Array = current_info["sides"]
-	var below_info: Dictionary = _piece_data.get(below_piece, {})
-	if below_info.is_empty():
-		return false
-	var below_sides: Array = below_info["sides"]
-
-	if not _sides_match(current_sides[SIDE_BOTTOM], below_sides[SIDE_TOP]):
-		return false
-
 	var clamped_x := clampf(next_piece_x, _player_min_x(), _player_max_x())
-	var fall_start_y := -_player_visual_size().y
-	_set_player_piece(below_piece, Vector2(clamped_x, fall_start_y))
+	_set_player_piece(below_piece, Vector2(clamped_x, 0.0))
 	_player_velocity.y = maxf(_player_velocity.y, PLAYER_DROP_TRANSFER_SPEED)
+	return true
+
+
+func _try_transfer_player_to_top_piece(new_pos: Vector2) -> bool:
+	if _player_piece == null or _player_root == null:
+		return false
+
+	var current_info: Dictionary = _piece_data.get(_player_piece, {})
+	if current_info.is_empty():
+		return false
+
+	var current_cell: Vector2i = current_info["cell"]
+	if not _is_valid_cell(current_cell):
+		return false
+
+	var above_cell := current_cell + Vector2i(0, -1)
+	if not _is_valid_cell(above_cell):
+		return false
+
+	var above_piece: Node2D = _board_slots[above_cell.y][above_cell.x]
+	if above_piece == null:
+		return false
+
+	var clamped_x := clampf(new_pos.x, _player_min_x(), _player_max_x())
+	var entry_y := _base_piece_size + new_pos.y
+	_set_player_piece(above_piece, Vector2(clamped_x, entry_y))
 	return true
 
 
@@ -1292,16 +1347,33 @@ func _resolve_piece_wall_collisions(previous_pos: Vector2, next_pos: Vector2) ->
 
 	var resolved := next_pos
 	if not is_equal_approx(next_pos.x, previous_pos.x):
-		var horizontal_rect := _player_hitbox_rect(Vector2(next_pos.x, previous_pos.y))
+		var h_rect := _player_hitbox_rect(Vector2(next_pos.x, previous_pos.y))
+		var horizontal_rect := Rect2(h_rect.position, Vector2(h_rect.size.x, h_rect.size.y - PLAYER_WALL_SNAP_OFFSET))
 		if _is_piece_rect_blocked_by_walls(_player_piece, horizontal_rect):
 			resolved.x = previous_pos.x
 			_player_velocity.x = 0.0
 
 	if not is_equal_approx(next_pos.y, previous_pos.y):
-		var vertical_rect := _player_hitbox_rect(Vector2(resolved.x, next_pos.y))
-		if _is_piece_rect_blocked_by_walls(_player_piece, vertical_rect):
-			resolved.y = previous_pos.y
-			_player_velocity.y = 0.0
+		if _player_velocity.y > 0.0:
+			var snap_rect := _player_hitbox_rect(Vector2(resolved.x, next_pos.y - PLAYER_WALL_SNAP_OFFSET))
+			if _is_piece_rect_blocked_by_walls(_player_piece, snap_rect):
+				var lo := previous_pos.y
+				var hi := next_pos.y
+				for _i in range(8):
+					var mid := (lo + hi) * 0.5
+					if _is_piece_rect_blocked_by_walls(_player_piece, _player_hitbox_rect(Vector2(resolved.x, mid - PLAYER_WALL_SNAP_OFFSET))):
+						hi = mid
+					else:
+						lo = mid
+				resolved.y = lo
+				_player_on_wall_floor = true
+				_player_velocity.y = 0.0
+		else:
+			var v_rect := _player_hitbox_rect(Vector2(resolved.x, next_pos.y))
+			var ceiling_rect := Rect2(v_rect.position, Vector2(v_rect.size.x, v_rect.size.y - PLAYER_WALL_SNAP_OFFSET))
+			if _is_piece_rect_blocked_by_walls(_player_piece, ceiling_rect):
+				resolved.y = previous_pos.y
+				_player_velocity.y = 0.0
 
 	return resolved
 
@@ -1454,7 +1526,7 @@ func _is_player_on_floor() -> bool:
 func _update_player_animation(direction: float, wants_run: bool) -> void:
 	var animation := "idle"
 
-	if not _is_player_on_floor():
+	if not _is_player_on_floor() and not _player_on_wall_floor:
 		animation = "jump_up" if _player_velocity.y < 0.0 else "jump_down"
 	elif abs(direction) > 0.01:
 		animation = "run" if wants_run else "walk"
@@ -1538,8 +1610,49 @@ func _player_hitbox_rect(root_position: Vector2) -> Rect2:
 	return Rect2(root_position + _player_hitbox_offset(), _player_hitbox_size())
 
 
+func _spawn_key_on_piece(piece: Node2D, local_pos: Vector2) -> void:
+	var instance := KEY_SCENE.instantiate()
+	if not (instance is Node2D):
+		instance.queue_free()
+		return
+	var key_node := instance as Node2D
+	key_node.position = local_pos
+	key_node.z_index = 10
+	piece.add_child(key_node)
+	_key_instances.append({"node": key_node, "piece": piece, "pos": local_pos})
+
+
+func _check_player_keys() -> void:
+	if _key_instances.is_empty() or _player_root == null or _player_piece == null:
+		return
+
+	var player_rect := _player_hitbox_rect(_player_root.position)
+	var key_size := Vector2(16.0, 24.0) * 0.75
+
+	for i in range(_key_instances.size() - 1, -1, -1):
+		var kd: Dictionary = _key_instances[i]
+		var key_piece := kd["node"] as Node2D
+		var key_piece_owner := kd["piece"] as Node2D
+		if key_piece_owner != _player_piece:
+			continue
+		var key_rect := Rect2((kd["pos"] as Vector2) - key_size * 0.5, key_size)
+		if player_rect.intersects(key_rect):
+			key_piece.queue_free()
+			_key_instances.remove_at(i)
+			_unlock_door()
+
+
+func _unlock_door() -> void:
+	_door_locked = false
+	if _door_instance == null:
+		return
+	var door_sprite := _door_instance.get_node_or_null("Door") as Sprite2D
+	if door_sprite != null:
+		door_sprite.texture = TEX_DOOR_OPEN
+
+
 func _is_player_in_door() -> bool:
-	if _player_piece != _end_piece or _door_instance == null:
+	if _door_locked or _player_piece != _end_piece or _door_instance == null:
 		return false
 
 	var player_rect := _player_hitbox_rect(_player_root.position)

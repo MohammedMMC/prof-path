@@ -50,6 +50,15 @@ const DEFAULT_WALL_TILE_TEXTURE := preload("res://assets/tilemap.png")
 @export var wall_map: String = ""
 @export var has_zombie := false
 
+@export_group("Key")
+@export var has_key := false
+@export var key_x := 25.0
+@export var key_y := 25.0
+
+@export_group("Door")
+@export var door_locked := false
+
+@export_group("")
 @export var base_texture: Texture2D = DEFAULT_BASE_TEXTURE
 @export var out_texture: Texture2D = DEFAULT_OUT_TEXTURE
 @export var close_texture: Texture2D = DEFAULT_CLOSE_TEXTURE
@@ -254,13 +263,22 @@ func _build_default_wall_tileset() -> TileSet:
 	if DEFAULT_WALL_TILE_TEXTURE == null:
 		return null
 
+	var tex_w := DEFAULT_WALL_TILE_TEXTURE.get_width()
+	var tex_h := DEFAULT_WALL_TILE_TEXTURE.get_height()
+	if tex_w <= 0 or tex_h <= 0:
+		return null
+
+	var tile_w := mini(int(PIECE_SIZE), tex_w)
+	var tile_h := mini(int(PIECE_SIZE), tex_h)
+
 	var tileset := TileSet.new()
-	tileset.tile_size = Vector2i(int(PIECE_SIZE), int(PIECE_SIZE))
+	tileset.tile_size = Vector2i(tile_w, tile_h)
 
 	var atlas := TileSetAtlasSource.new()
 	atlas.texture = DEFAULT_WALL_TILE_TEXTURE
-	atlas.texture_region_size = Vector2i(int(PIECE_SIZE), int(PIECE_SIZE))
-	atlas.create_tile(Vector2i.ZERO)
+	atlas.texture_region_size = Vector2i(tile_w, tile_h)
+	if not atlas.has_tile(Vector2i.ZERO):
+		atlas.create_tile(Vector2i.ZERO)
 	tileset.add_source(atlas)
 	return tileset
 
@@ -284,6 +302,11 @@ func to_block_dict() -> Dictionary:
 			block["position"] = explicit_position
 
 	block["zombie"] = has_zombie
+
+	if has_key:
+		block["key_position"] = Vector2(key_x, key_y)
+	if door_locked:
+		block["door_locked"] = true
 
 	var wall_map_name := wall_map.strip_edges()
 	if wall_map_name.is_empty():
