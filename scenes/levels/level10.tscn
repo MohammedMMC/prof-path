@@ -1,16 +1,16 @@
-[gd_scene format=3 uid="uid://br1vwaodt1ir6"]
+[gd_scene format=4 uid="uid://mdtaxatkfe4"]
 
-[ext_resource type="Script" uid="uid://cbgd1d273tedo" path="res://scripts/levels/level_03.gd" id="1_kbm1j"]
-[ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="2_y32lo"]
-[ext_resource type="PackedScene" uid="uid://bku7hb346q2tq" path="res://scenes/level_bar.tscn" id="3_gtltd"]
-[ext_resource type="PackedScene" uid="uid://b1kvnrqelcjrg" path="res://scenes/modal_pause.tscn" id="4_juekl"]
-[ext_resource type="PackedScene" uid="uid://xelsgsbgn2mk" path="res://scenes/modal_win.tscn" id="5_qt5fy"]
-[ext_resource type="PackedScene" uid="uid://dekh4cjjrhoe0" path="res://scenes/modal_lose.tscn" id="6_20o28"]
-[ext_resource type="Script" uid="uid://ctt40orvs67se" path="res://scripts/levels/level_piece.gd" id="7_w6ki7"]
-[ext_resource type="Texture2D" uid="uid://bt448wy6rls8u" path="res://assets/tilemap.png" id="8_12bsl"]
+[ext_resource type="Script" uid="uid://cbgd1d273tedo" path="res://scripts/levels/level_03.gd" id="1_h1dae"]
+[ext_resource type="PackedScene" uid="uid://dma318274xmu4" path="res://scenes/background.tscn" id="2_infop"]
+[ext_resource type="PackedScene" uid="uid://bku7hb346q2tq" path="res://scenes/level_bar.tscn" id="3_s4x5n"]
+[ext_resource type="PackedScene" uid="uid://b1kvnrqelcjrg" path="res://scenes/modal_pause.tscn" id="4_8kjvp"]
+[ext_resource type="PackedScene" uid="uid://xelsgsbgn2mk" path="res://scenes/modal_win.tscn" id="5_bu22b"]
+[ext_resource type="PackedScene" uid="uid://dekh4cjjrhoe0" path="res://scenes/modal_lose.tscn" id="6_6sre3"]
+[ext_resource type="Script" uid="uid://ctt40orvs67se" path="res://scripts/levels/level_piece.gd" id="7_1se4v"]
+[ext_resource type="Texture2D" uid="uid://bt448wy6rls8u" path="res://assets/tilemap.png" id="8_ysxgg"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_if0f4"]
-texture = ExtResource("8_12bsl")
+texture = ExtResource("8_ysxgg")
 texture_region_size = Vector2i(50, 50)
 
 [sub_resource type="TileSet" id="TileSet_ylsda"]
@@ -18,7 +18,7 @@ tile_size = Vector2i(50, 50)
 sources/0 = SubResource("TileSetAtlasSource_if0f4")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qjm5h"]
-texture = ExtResource("8_12bsl")
+texture = ExtResource("8_ysxgg")
 texture_region_size = Vector2i(50, 50)
 
 [sub_resource type="TileSet" id="TileSet_y32f7"]
@@ -26,7 +26,7 @@ tile_size = Vector2i(50, 50)
 sources/0 = SubResource("TileSetAtlasSource_qjm5h")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_aoybf"]
-texture = ExtResource("8_12bsl")
+texture = ExtResource("8_ysxgg")
 texture_region_size = Vector2i(2, 2)
 7:10/0 = 0
 8:17/0 = 0
@@ -2531,20 +2531,20 @@ tile_size = Vector2i(2, 2)
 sources/0 = SubResource("TileSetAtlasSource_aoybf")
 
 [node name="Level01" type="Node2D" unique_id=553084612]
-script = ExtResource("1_kbm1j")
+script = ExtResource("1_h1dae")
 
 [node name="Panel" type="Panel" parent="." unique_id=984896560]
 offset_right = 480.0
 offset_bottom = 270.0
 
-[node name="Background" parent="Panel" unique_id=129210056 instance=ExtResource("2_y32lo")]
+[node name="Background" parent="Panel" unique_id=129210056 instance=ExtResource("2_infop")]
 layout_mode = 1
 
-[node name="LevelBar" parent="." unique_id=590233405 instance=ExtResource("3_gtltd")]
+[node name="LevelBar" parent="." unique_id=590233405 instance=ExtResource("3_s4x5n")]
 offset_right = 480.0
 offset_bottom = 68.0
 
-[node name="ModalPause" parent="." unique_id=418929332 instance=ExtResource("4_juekl")]
+[node name="ModalPause" parent="." unique_id=418929332 instance=ExtResource("4_8kjvp")]
 visible = false
 anchors_preset = 0
 anchor_right = 0.0
@@ -2554,7 +2554,7 @@ offset_bottom = 270.0
 grow_horizontal = 1
 grow_vertical = 1
 
-[node name="ModalWin" parent="." unique_id=853956185 instance=ExtResource("5_qt5fy")]
+[node name="ModalWin" parent="." unique_id=853956185 instance=ExtResource("5_bu22b")]
 visible = false
 anchors_preset = 0
 anchor_right = 0.0
@@ -2564,7 +2564,7 @@ offset_bottom = 270.0
 grow_horizontal = 1
 grow_vertical = 1
 
-[node name="ModalLose" parent="." unique_id=1222378260 instance=ExtResource("6_20o28")]
+[node name="ModalLose" parent="." unique_id=1222378260 instance=ExtResource("6_6sre3")]
 visible = false
 anchors_preset = 0
 anchor_right = 0.0
@@ -2579,35 +2579,28 @@ grow_vertical = 1
 [node name="LevelPieces" type="Node2D" parent="." unique_id=391880211]
 
 [node name="StartPiece" type="Node2D" parent="LevelPieces" unique_id=191882812]
-position = Vector2(180, 140)
+position = Vector2(140, 140)
 scale = Vector2(0.8, 0.8)
-script = ExtResource("7_w6ki7")
+script = ExtResource("7_1se4v")
 role = 0
 side_right = 0
 placement_mode = 0
-board_cell = Vector2i(4, 3)
+board_cell = Vector2i(3, 3)
 wall_map = "StartPiece"
-has_key = null
-key_x = null
-key_y = null
-door_locked = null
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/StartPiece" unique_id=1041937149]
 z_index = 4
 tile_set = SubResource("TileSet_ylsda")
 
 [node name="EndPiece" type="Node2D" parent="LevelPieces" unique_id=1016293310]
-position = Vector2(300, 100)
+position = Vector2(300, 140)
 scale = Vector2(0.8, 0.8)
-script = ExtResource("7_w6ki7")
+script = ExtResource("7_1se4v")
 role = 1
 side_left = 0
 placement_mode = 0
-board_cell = Vector2i(7, 2)
+board_cell = Vector2i(7, 3)
 wall_map = "EndPiece"
-has_key = null
-key_x = null
-key_y = null
 door_locked = true
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/EndPiece" unique_id=1202931430]
@@ -2615,19 +2608,35 @@ z_index = 4
 tile_set = SubResource("TileSet_y32f7")
 
 [node name="Connector01" type="Node2D" parent="LevelPieces" unique_id=1495996744]
-position = Vector2(260, 180)
+position = Vector2(220, 100)
 scale = Vector2(0.8, 0.8)
-script = ExtResource("7_w6ki7")
-side_right = 1
-side_left = 1
+script = ExtResource("7_1se4v")
+side_top = 0
 placement_mode = 1
-spawn_cell = Vector2i(6, 4)
+spawn_cell = Vector2i(5, 2)
 wall_map = "Connector01"
 has_zombie = true
 has_key = true
-key_y = 20.0
-door_locked = null
+key_x = 40.0
+key_y = 40.0
 
 [node name="WallMap" type="TileMapLayer" parent="LevelPieces/Connector01" unique_id=1529652114]
+z_index = 4
+tile_map_data = PackedByteArray("AAABAA4AAAAYAAsAAAACAA4AAAAYAAsAAAADAA4AAAAYAAsAAAAEAA4AAAAYAAsAAAAFAA4AAAAYAAsAAAAGAA4AAAAYAAsAAAAHAA4AAAAYAAsAAAAIAA4AAAAYAAsAAAAJAA4AAAAYAAsAAAAKAA4AAAAYAAsAAAALAA4AAAAYAAsAAAAMAA4AAAAYAAsAAAANAA4AAAAYAAsAAAAOAA4AAAAYAAsAAAAPAA4AAAAYAAsAAAAQAA4AAAAYAAsAAAAAAA8AAAAYAAgAAAAAABAAAAAYAAgAAAAAABEAAAAYAAgAAAAAABIAAAAYAAgAAAAAABMAAAAYAAgAAAAAABQAAAAYAAgAAAAAABUAAAAYAAgAAAAAABYAAAAYAAgAAAAAABcAAAAYAAgAAAA=")
+tile_set = SubResource("TileSet_63ajt")
+
+[node name="Connector02" type="Node2D" parent="LevelPieces" unique_id=147487292]
+position = Vector2(260, 180)
+scale = Vector2(0.8, 0.8)
+script = ExtResource("7_1se4v")
+side_top = 0
+side_right = 1
+side_bottom = 1
+side_left = 1
+placement_mode = 1
+spawn_cell = Vector2i(6, 4)
+wall_map = "Connector02"
+
+[node name="WallMap" type="TileMapLayer" parent="LevelPieces/Connector02" unique_id=1194909186]
 z_index = 4
 tile_set = SubResource("TileSet_63ajt")

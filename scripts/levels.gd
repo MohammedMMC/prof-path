@@ -13,7 +13,6 @@ var level_buttons: Array[TextureButton] = []
 var _secret_buffer := ""
 var _force_unlock_all := false
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	fade_rect.color = Color(0, 0, 0, 0)
 	set_process_unhandled_input(true)

@@ -341,6 +341,48 @@ label_settings = SubResource("LabelSettings_6g56m")
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Level14" type="TextureButton" parent="GridContainer" unique_id=1714821350]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level14" unique_id=840775819]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "14"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Level15" type="TextureButton" parent="GridContainer" unique_id=304031353]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("3_byla0")
+texture_pressed = ExtResource("4_r44b6")
+texture_hover = ExtResource("4_r44b6")
+texture_disabled = ExtResource("5_1jewu")
+texture_focused = ExtResource("4_r44b6")
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GridContainer/Level15" unique_id=1374532689]
+layout_mode = 0
+offset_right = 38.0
+offset_bottom = 34.0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_00hpi")
+text = "15"
+label_settings = SubResource("LabelSettings_6g56m")
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="FadeRect" type="ColorRect" parent="." unique_id=684544004]
 layout_mode = 1
 anchors_preset = 15

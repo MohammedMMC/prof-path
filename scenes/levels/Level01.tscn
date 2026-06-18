@@ -11,23 +11,23 @@
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_if0f4"]
 texture = ExtResource("7_3yqkj")
-texture_region_size = Vector2i(50, 50)
+texture_region_size = Vector2i(2, 2)
 
 [sub_resource type="TileSet" id="TileSet_ylsda"]
-tile_size = Vector2i(50, 50)
+tile_size = Vector2i(1, 1)
 sources/0 = SubResource("TileSetAtlasSource_if0f4")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_qjm5h"]
 texture = ExtResource("7_3yqkj")
-texture_region_size = Vector2i(50, 50)
+texture_region_size = Vector2i(2, 2)
 
 [sub_resource type="TileSet" id="TileSet_y32f7"]
-tile_size = Vector2i(50, 50)
+tile_size = Vector2i(1, 1)
 sources/0 = SubResource("TileSetAtlasSource_qjm5h")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cd15k"]
 texture = ExtResource("7_3yqkj")
-texture_region_size = Vector2i(1, 1)
+texture_region_size = Vector2i(2, 2)
 7:10/0 = 0
 8:17/0 = 0
 18:21/0 = 0

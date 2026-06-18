@@ -94,19 +94,7 @@ var connector_spawn_position := TRAY_ORIGIN
 var start_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_CLOSED]
 var end_piece_sides: Array = [SIDE_CLOSED, SIDE_CLOSED, SIDE_CLOSED, SIDE_IN]
 var connector_piece_sides: Array = [SIDE_CLOSED, SIDE_OUT, SIDE_CLOSED, SIDE_IN]
-# Easy per-level layout config. Each entry can define:
-# - name: String
-# - role: start/end/normal
-# - sides: [top, right, bottom, left] using SIDE_* constants
-# - draggable: bool
-# - cell: Vector2i (board location)
-# - spawn_cell: Vector2i (board-grid position without occupying a board slot)
-# - tray_cell: Vector2i (free/tray grid location relative to connector_spawn_position)
-# - position: Vector2 (optional raw world-grid position for free/tray blocks)
-# - wall_map: String (TileMap/TileMapLayer node name; painted cells become player walls)
-# - style: { base_texture, out_texture, close_texture }
 var level_blocks: Array = []
-# Fallback anchor (used when door sprite bounds are not detectable).
 var door_piece_local_position := Vector2(30.0, 33.0)
 var door_snap_to_ground_right := true
 var door_padding_right := 2.0
@@ -602,13 +590,11 @@ func _find_wall_map_template(map_name: String) -> Node:
 	if trimmed_name.is_empty():
 		return null
 
-	# Preferred workflow: per-piece editable map at LevelPieces/<PieceName>/WallMap.
 	if has_node("LevelPieces/%s/WallMap" % trimmed_name):
 		var piece_wall := get_node("LevelPieces/%s/WallMap" % trimmed_name)
 		if _is_wall_map_node(piece_wall):
 			return piece_wall
 
-	# Allow explicit node paths in wall_map config.
 	if has_node(trimmed_name):
 		var by_path := get_node(trimmed_name)
 		if _is_wall_map_node(by_path):
@@ -624,7 +610,6 @@ func _find_wall_map_template(map_name: String) -> Node:
 			if child is Node and (child as Node).name == trimmed_name and _is_wall_map_node(child as Node):
 				return child as Node
 
-	# Fallback: allow map nodes anywhere in the level scene.
 	var any_match := find_child(trimmed_name, true, false)
 	if any_match is Node and _is_wall_map_node(any_match as Node):
 		return any_match as Node
@@ -735,7 +720,6 @@ func _door_visual_rect_from_instance(instance: Node) -> Rect2:
 
 
 func _setup_level_ui() -> void:
-	# Let gameplay input pass through the top bar except actual clickable buttons.
 	level_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	timer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1309,6 +1293,14 @@ func _try_transfer_player_to_bottom_piece(next_piece_x: float) -> bool:
 	if below_piece == null:
 		return false
 
+	var current_sides: Array = current_info["sides"]
+	var below_info: Dictionary = _piece_data.get(below_piece, {})
+	if below_info.is_empty():
+		return false
+	var below_sides: Array = below_info["sides"]
+	if not _sides_match(current_sides[SIDE_BOTTOM], below_sides[SIDE_TOP]):
+		return false
+
 	var clamped_x := clampf(next_piece_x, _player_min_x(), _player_max_x())
 	_set_player_piece(below_piece, Vector2(clamped_x, 0.0))
 	_player_velocity.y = maxf(_player_velocity.y, PLAYER_DROP_TRANSFER_SPEED)
@@ -1333,6 +1325,14 @@ func _try_transfer_player_to_top_piece(new_pos: Vector2) -> bool:
 
 	var above_piece: Node2D = _board_slots[above_cell.y][above_cell.x]
 	if above_piece == null:
+		return false
+
+	var current_sides: Array = current_info["sides"]
+	var above_info: Dictionary = _piece_data.get(above_piece, {})
+	if above_info.is_empty():
+		return false
+	var above_sides: Array = above_info["sides"]
+	if not _sides_match(current_sides[SIDE_TOP], above_sides[SIDE_BOTTOM]):
 		return false
 
 	var clamped_x := clampf(new_pos.x, _player_min_x(), _player_max_x())
